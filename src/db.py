@@ -11,7 +11,7 @@ from config import Config
 
 logger = logging.getLogger(__name__)
 
-SCHEMA_PATH = os.path.join(os.path.dirname(__file__), "..", "sql", "schema.sql")
+SCHEMA_PATH = os.path.join(os.path.dirname(__file__), "sql", "schema.sql")
 
 
 @contextmanager
