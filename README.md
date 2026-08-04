@@ -39,17 +39,10 @@ Volume in den Container gemountet.
 
 ## 3. Datenbank vorbereiten
 
-```
-mysql -h mariadb.internal -u root -p < sql/schema.sql
-```
+Falls Datenbank und Benutzer noch nicht existieren, führe dieses Skript einmalig aus:
 
-Falls Datenbank und Benutzer noch nicht existieren, vorher z. B.:
-
-```sql
-CREATE DATABASE contacts CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'contacts_sync'@'%' IDENTIFIED BY 'ein-sicheres-passwort';
-GRANT ALL PRIVILEGES ON contacts.* TO 'contacts_sync'@'%';
-FLUSH PRIVILEGES;
+```bash
+mysql -u root -p < mariadb-setup.sql
 ```
 
 ## 4. Umgebungsvariablen konfigurieren
