@@ -11,6 +11,17 @@ def _get(vcard, attr, default=None):
     return getattr(vcard, attr).value if hasattr(vcard, attr) else default
 
 
+def _type_str(obj) -> str:
+    """Liest den TYPE-Parameter sicher aus einem vobject-Element."""
+    if hasattr(obj, "type_paramlist") and obj.type_paramlist:
+        return ",".join(obj.type_paramlist)
+    params = getattr(obj, "params", {})
+    type_val = params.get("TYPE") or params.get("type")
+    if type_val:
+        return type_val if isinstance(type_val, str) else ",".join(type_val)
+    return "other"
+
+
 def parse_vcard(raw_text: str, account: str) -> dict | None:
     try:
         vcard = vobject.readOne(raw_text)
@@ -30,21 +41,21 @@ def parse_vcard(raw_text: str, account: str) -> dict | None:
     prefix = n.value.prefix if n else None
     suffix = n.value.suffix if n else None
 
-    emails = [{"type": ",".join(e.type_paramlist) if e.type_paramlist else "other", "value": e.value}
+    emails = [{"type": _type_str(e), "value": e.value}
               for e in getattr(vcard, "email_list", [])]
-    phones = [{"type": ",".join(t.type_paramlist) if t.type_paramlist else "other", "value": t.value}
+    phones = [{"type": _type_str(t), "value": t.value}
               for t in getattr(vcard, "tel_list", [])]
 
     addresses = []
     for a in getattr(vcard, "adr_list", []):
         v = a.value
         addresses.append({
-            "type": ",".join(a.type_paramlist) if a.type_paramlist else "other",
+            "type": _type_str(a),
             "street": v.street, "city": v.city, "region": v.region,
             "zip": v.code, "country": v.country,
         })
 
-    urls = [{"type": ",".join(u.type_paramlist) if u.type_paramlist else "other", "value": u.value}
+    urls = [{"type": _type_str(u), "value": u.value}
             for u in getattr(vcard, "url_list", [])]
 
     categories = [c.strip() for c in vcard.categories.value] if hasattr(vcard, "categories") else []
