@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>Kontakte – {{ account_name }}</title>
+  <style>
+    body { font-family: sans-serif; margin: 2rem; background: #111; color: #eee; }
+    h1 { font-size: 1.4rem; }
+    table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+    th, td { border-bottom: 1px solid #333; padding: 0.4rem 0.6rem; text-align: left; }
+    th { background: #1c1c1c; }
+    .meta { color: #999; font-size: 0.85rem; margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Kontakte</h1>
+  <div class="meta">
+    Angemeldet als <strong>{{ current_user }}</strong>
+    {% if is_admin %}(Admin, sieht alle Accounts){% else %}(Account: {{ account_name }}){% endif %}
+    · {{ contacts|length }} Kontakte (max. 200 angezeigt)
+  </div>
+  <table>
+    <thead>
+      <tr><th>Name</th><th>Organisation</th><th>Geburtstag</th>{% if is_admin %}<th>Account</th>{% endif %}</tr>
+    </thead>
+    <tbody>
+      {% for c in contacts %}
+      <tr>
+        <td>{{ c.full_name or "-" }}</td>
+        <td>{{ c.organization or "-" }}</td>
+        <td>{{ c.birthday or "-" }}</td>
+        {% if is_admin %}<td>{{ c.account }}</td>{% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>

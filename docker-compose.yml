@@ -1,0 +1,63 @@
+version: "3.9"
+
+services:
+  icloud-contacts-sync:
+    image: ghcr.io/DEIN_GITHUB_USER/icloud-contacts-sync:latest
+    container_name: icloud-contacts-sync
+    restart: unless-stopped
+    environment:
+      MARIADB_HOST: "${MARIADB_HOST:-mariadb.internal}"
+      MARIADB_PORT: "${MARIADB_PORT:-3306}"
+      MARIADB_DATABASE: "${MARIADB_DATABASE:-contacts}"
+      MARIADB_USER: "${MARIADB_USER}"
+      MARIADB_PASSWORD: "${MARIADB_PASSWORD}"
+      ACCOUNTS_CONFIG_PATH: "/app/config/accounts.json"
+      LOG_LEVEL: "${LOG_LEVEL:-INFO}"
+      MAILER_ENABLED: "${MAILER_ENABLED:-true}"
+      SMTP_HOST: "${SMTP_HOST}"
+      SMTP_PORT: "${SMTP_PORT:-587}"
+      SMTP_USER: "${SMTP_USER}"
+      SMTP_PASSWORD: "${SMTP_PASSWORD}"
+      SMTP_USE_TLS: "${SMTP_USE_TLS:-true}"
+      MAIL_FROM: "${MAIL_FROM}"
+      MAIL_TO: "${MAIL_TO}"
+      MAIL_SEND_HOUR: "${MAIL_SEND_HOUR:-7}"
+    volumes:
+      - ./config/accounts.json:/app/config/accounts.json:ro
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  icloud-contacts-api:
+    image: ghcr.io/DEIN_GITHUB_USER/icloud-contacts-sync:latest
+    container_name: icloud-contacts-api
+    restart: unless-stopped
+    # Gleiches Image wie oben, aber anderer Command -> startet die FastAPI-App
+    # statt des Cron-Entrypoints. Läuft NUR lesend gegen MariaDB.
+    command: ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    working_dir: /app
+    environment:
+      MARIADB_HOST: "${MARIADB_HOST:-mariadb.internal}"
+      MARIADB_PORT: "${MARIADB_PORT:-3306}"
+      MARIADB_DATABASE: "${MARIADB_DATABASE:-contacts}"
+      MARIADB_USER: "${MARIADB_USER}"
+      MARIADB_PASSWORD: "${MARIADB_PASSWORD}"
+      ACCOUNTS_CONFIG_PATH: "/app/config/accounts.json"
+      LOG_LEVEL: "${LOG_LEVEL:-INFO}"
+      AUTH_REMOTE_USER_HEADER: "${AUTH_REMOTE_USER_HEADER:-Remote-User}"
+      API_HOST: "${API_HOST:-0.0.0.0}"
+      API_PORT: "${API_PORT:-8000}"
+    volumes:
+      - ./config/accounts.json:/app/config/accounts.json:ro
+    ports:
+      - "127.0.0.1:8000:8000"
+    # Nur lokal an localhost gebunden: der eigentliche externe Zugriff läuft
+    # über deinen Reverse-Proxy mit Authelia (auth_request), der intern auf
+    # diesen Port weiterleitet und den Remote-User-Header setzt.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

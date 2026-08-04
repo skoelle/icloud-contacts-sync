@@ -1,0 +1,2 @@
+*/15 * * * * /usr/local/bin/run-sync.sh >> /proc/1/fd/1 2>> /proc/1/fd/2
+0 7 * * * /usr/local/bin/run-mailer.sh >> /proc/1/fd/1 2>> /proc/1/fd/2

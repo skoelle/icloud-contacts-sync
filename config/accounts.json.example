@@ -1,0 +1,19 @@
+{
+  "accounts": [
+    {
+      "name": "markus",
+      "apple_email": "markus@icloud.com",
+      "apple_app_password": "xxxx-xxxx-xxxx-xxxx",
+      "authelia_user": "mmustermann"
+    },
+    {
+      "name": "partner",
+      "apple_email": "partner@icloud.com",
+      "apple_app_password": "yyyy-yyyy-yyyy-yyyy",
+      "authelia_user": "partner.user"
+    }
+  ],
+  "admins": [
+    "mmustermann"
+  ]
+}
