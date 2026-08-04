@@ -149,15 +149,26 @@ def list_sync_runs(current_user: str = Depends(get_current_user)):
 
 
 @app.get("/", response_class=HTMLResponse)
-def web_index(request: Request, current_user: str = Depends(get_current_user)):
+def web_index(
+    request: Request,
+    search: str | None = Query(default=None),
+    current_user: str = Depends(get_current_user),
+):
     account_name, is_admin = resolve_account_for_user(current_user)
 
     with db.get_connection() as conn:
         where_clause, params = _account_filter_clause(account_name)
+        search_clause = ""
+        if search:
+            search_op = "AND" if where_clause else "WHERE"
+            search_clause = f" {search_op} (full_name LIKE %s OR organization LIKE %s)"
+            like = f"%{search}%"
+            params.extend([like, like])
+
         with conn.cursor() as cur:
             cur.execute(
                 f"""SELECT id, full_name, organization, birthday, account
-                    FROM contacts {where_clause}
+                    FROM contacts {where_clause}{search_clause}
                     ORDER BY full_name
                     LIMIT 200""",
                 params,
@@ -172,5 +183,6 @@ def web_index(request: Request, current_user: str = Depends(get_current_user)):
             "is_admin": is_admin,
             "account_name": account_name or "alle Accounts",
             "contacts": rows,
+            "search": search or "",
         },
     )

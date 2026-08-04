@@ -1,38 +1,204 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="utf-8">
-  <title>Kontakte – {{ account_name }}</title>
-  <style>
-    body { font-family: sans-serif; margin: 2rem; background: #111; color: #eee; }
-    h1 { font-size: 1.4rem; }
-    table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
-    th, td { border-bottom: 1px solid #333; padding: 0.4rem 0.6rem; text-align: left; }
-    th { background: #1c1c1c; }
-    .meta { color: #999; font-size: 0.85rem; margin-bottom: 1rem; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kontakte – {{ account_name }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: #222;
+        }
+
+        .meta {
+            color: #666;
+            font-size: 0.875rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .search-form {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .search-form input[type="text"] {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+            background: #fff;
+        }
+
+        .search-form input[type="text"]:focus {
+            outline: none;
+            border-color: #0066cc;
+        }
+
+        .search-form button {
+            padding: 0.75rem 1.5rem;
+            background: #0066cc;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .search-form button:hover {
+            background: #0055aa;
+        }
+
+        .search-form a {
+            padding: 0.75rem 1rem;
+            background: #e0e0e0;
+            color: #333;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+
+        .search-form a:hover {
+            background: #d0d0d0;
+        }
+
+        .contacts-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .contact-card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .contact-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .contact-name {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #222;
+        }
+
+        .contact-organization {
+            font-size: 0.875rem;
+            color: #666;
+            margin-top: 0.25rem;
+        }
+
+        .contact-birthday {
+            font-size: 0.875rem;
+            color: #888;
+            margin-top: 0.25rem;
+        }
+
+        .contact-birthday::before {
+            content: "\1F382 ";
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        .badge-account {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .no-contacts {
+            text-align: center;
+            color: #888;
+            padding: 3rem 1rem;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+    </style>
 </head>
 <body>
-  <h1>Kontakte</h1>
-  <div class="meta">
-    Angemeldet als <strong>{{ current_user }}</strong>
-    {% if is_admin %}(Admin, sieht alle Accounts){% else %}(Account: {{ account_name }}){% endif %}
-    · {{ contacts|length }} Kontakte (max. 200 angezeigt)
-  </div>
-  <table>
-    <thead>
-      <tr><th>Name</th><th>Organisation</th><th>Geburtstag</th>{% if is_admin %}<th>Account</th>{% endif %}</tr>
-    </thead>
-    <tbody>
-      {% for c in contacts %}
-      <tr>
-        <td>{{ c.full_name or "-" }}</td>
-        <td>{{ c.organization or "-" }}</td>
-        <td>{{ c.birthday or "-" }}</td>
-        {% if is_admin %}<td>{{ c.account }}</td>{% endif %}
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+    <div class="container">
+        <h1>Kontakte</h1>
+        <div class="meta">
+            Angemeldet als <strong>{{ current_user }}</strong>
+            {% if is_admin %}(Admin, sieht alle Accounts){% else %}(Account: {{ account_name }}){% endif %}
+            · {{ contacts|length }} Kontakte (max. 200 angezeigt)
+        </div>
+
+        <form class="search-form" method="get" action="/">
+            <input type="text" name="search" value="{{ search }}" placeholder="Suche nach Name oder Organisation...">
+            <button type="submit">Suchen</button>
+            {% if search %}
+            <a href="/">Zurücksetzen</a>
+            {% endif %}
+        </form>
+
+        <div class="contacts-list">
+            {% if contacts %}
+                {% for c in contacts %}
+                <div class="contact-card">
+                    <div class="contact-header">
+                        <div>
+                            <div class="contact-name">{{ c.full_name or '(Kein Name)' }}</div>
+                            {% if c.organization %}
+                            <div class="contact-organization">{{ c.organization }}</div>
+                            {% endif %}
+                            {% if c.birthday %}
+                            <div class="contact-birthday">{{ c.birthday }}</div>
+                            {% endif %}
+                        </div>
+                        {% if is_admin and c.account %}
+                        <span class="badge badge-account">{{ c.account }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-contacts">
+                    {% if search %}
+                        Keine Kontakte für "{{ search }}" gefunden.
+                    {% else %}
+                        Keine Kontakte vorhanden.
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
 </body>
 </html>
