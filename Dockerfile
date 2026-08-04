@@ -1,8 +1,8 @@
 FROM python:3.12-slim
 
-ARG SUPERCRONIC_VERSION=v0.2.40
+ARG SUPERCRONIC_VERSION=v0.2.48
 ARG SUPERCRONIC_URL=https://github.com/aptible/supercronic/releases/download/${SUPERCRONIC_VERSION}/supercronic-linux-amd64
-ARG SUPERCRONIC_SHA1SUM=e9481a3ec22f782dc4f7c8e0a6b5a7c3a4a8e1a0
+ARG SUPERCRONIC_SHA1SUM=016b7c9aebfc8d9fd9526e8ba33b191fc524485f
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl ca-certificates \
