@@ -1,6 +1,12 @@
 #!/bin/sh
 set -e
 
+# Wurde ein alternativer Befehl uebergeben (z.B. uvicorn), fuehre diesen
+# direkt aus und ueberspringe den Sync-/Cron-Modus.
+if [ $# -gt 0 ]; then
+    exec "$@"
+fi
+
 MAIL_HOUR="${MAIL_SEND_HOUR:-7}"
 
 echo "Starte icloud-contacts-sync Container"
