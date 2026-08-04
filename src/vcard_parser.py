@@ -44,11 +44,11 @@ def parse_vcard(raw_text: str, account: str) -> dict | None:
         return None
 
     n = getattr(vcard, "n", None)
-    given_name = n.value.given if n else None
-    family_name = n.value.family if n else None
-    middle_name = n.value.additional if n else None
-    prefix = n.value.prefix if n else None
-    suffix = n.value.suffix if n else None
+    given_name = _scalar(n.value.given) if n else None
+    family_name = _scalar(n.value.family) if n else None
+    middle_name = _scalar(n.value.additional) if n else None
+    prefix = _scalar(n.value.prefix) if n else None
+    suffix = _scalar(n.value.suffix) if n else None
 
     emails = [{"type": _type_str(e), "value": e.value}
               for e in getattr(vcard, "email_list", [])]

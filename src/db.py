@@ -95,6 +95,7 @@ def upsert_contacts(conn, contacts: list[dict], run_id: str):
     with conn.cursor() as cur:
         for c in contacts:
             c["sync_run_id"] = run_id
+            c = _sanitize_contact(c)
             cols = list(c.keys())
             placeholders = ", ".join(["%s"] * len(cols))
             update_clause = ", ".join(f"{col}=VALUES({col})" for col in cols if col not in ("account", "uid"))
@@ -118,12 +119,30 @@ def delete_contacts_by_href_uids(conn, account: str, uids: list[str]):
     conn.commit()
 
 
+def _sanitize_contact(c: dict) -> dict:
+    """Stellt sicher, dass alle Werte Skalare sind (kein tuple/list/dict)."""
+    sanitized = {}
+    for k, v in c.items():
+        if isinstance(v, (list, tuple)):
+            # JSON-Felder sind bereits serialisiert, andere zu Strings machen
+            if k in ("emails", "phones", "addresses", "urls", "social_profiles", "related_names", "categories"):
+                sanitized[k] = v  # bereits JSON-String
+            else:
+                sanitized[k] = ",".join(str(x) for x in v) if v else None
+        elif isinstance(v, dict):
+            sanitized[k] = str(v) if v else None
+        else:
+            sanitized[k] = v
+    return sanitized
+
+
 def replace_all_contacts_for_account(conn, account: str, contacts: list[dict], run_id: str):
     """Voller Re-Sync für einen Account (initialer Lauf oder Recovery nach ungültigem sync-token)."""
     with conn.cursor() as cur:
         cur.execute("DELETE FROM contacts WHERE account = %s", (account,))
         for c in contacts:
             c["sync_run_id"] = run_id
+            c = _sanitize_contact(c)
             cols = ", ".join(c.keys())
             placeholders = ", ".join(["%s"] * len(c))
             cur.execute(f"INSERT INTO contacts ({cols}) VALUES ({placeholders})", list(c.values()))
