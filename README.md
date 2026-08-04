@@ -200,6 +200,21 @@ docker compose up -d icloud-contacts-api
 Der Service läuft nur an `127.0.0.1:8000`, ein direkter externer
 Zugriff ohne den Reverse-Proxy ist damit nicht möglich.
 
+### Endpunkte (Routes)
+
+| Methode | Pfad | Beschreibung |
+|---------|------|--------------|
+| `GET` | `/` | Web-UI — zeigt Kontakte des eingeloggten Users (HTML) |
+| `GET` | `/api/health` | Health Check (`{"status": "ok"}`), kein Login nötig |
+| `GET` | `/api/contacts` | Kontaktsuche mit Pagination (`?q=...&limit=...&offset=...`) |
+| `GET` | `/api/contacts/{contact_id}` | Einzelnen Kontakt per ID abrufen |
+| `GET` | `/api/contacts/birthdays/today` | Heutige Geburtstage |
+| `GET` | `/api/sync-runs` | Letzte 50 Sync-Runs (Status, Zeitstempel, Fehler) |
+
+Alle Endpunkte (außer `/api/health`) erfordern eine Authentifizierung
+über den `Remote-User`-Header. Nicht-Admins sehen nur die Daten ihres
+eigenen Accounts.
+
 ### API kurz testen (lokal auf der Docker-Host, mit Header simuliert)
 
 ```
