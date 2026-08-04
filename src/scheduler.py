@@ -16,6 +16,8 @@ import sys
 import time
 from datetime import datetime, timedelta
 
+import db
+
 logging.basicConfig(
     level=os.environ.get("LOG_LEVEL", "INFO"),
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -89,6 +91,12 @@ def main():
         logger.info("Mailer: taeglich um %d:00 Uhr", MAIL_SEND_HOUR)
     else:
         logger.info("Mailer: deaktiviert (MAILER_ENABLED=false)")
+
+    logger.info("Pruefe/initialisiere Datenbank-Schema...")
+    try:
+        db.ensure_schema()
+    except Exception:
+        logger.exception("Schema-Init fehlgeschlagen — Sync wird trotzdem gestartet")
 
     logger.info("Fuehre initialen Sync aus...")
     run_sync()

@@ -1,5 +1,6 @@
 """MariaDB-Anbindung: Delta-Sync-Strategie (Upsert für Änderungen, gezieltes Löschen für Removals)."""
 import logging
+import os
 import uuid
 from contextlib import contextmanager
 
@@ -9,6 +10,8 @@ from pymysql.cursors import DictCursor
 from config import Config
 
 logger = logging.getLogger(__name__)
+
+SCHEMA_PATH = os.path.join(os.path.dirname(__file__), "..", "sql", "schema.sql")
 
 
 @contextmanager
@@ -22,6 +25,24 @@ def get_connection():
         yield conn
     finally:
         conn.close()
+
+
+def ensure_schema():
+    """Legt alle Tabellen an, falls sie noch nicht existieren (idempotent)."""
+    schema_file = os.path.normpath(SCHEMA_PATH)
+    if not os.path.exists(schema_file):
+        logger.warning("Schema-Datei nicht gefunden: %s — überspringe Init", schema_file)
+        return
+    with open(schema_file, "r", encoding="utf-8") as f:
+        sql = f.read()
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            for statement in sql.split(";"):
+                statement = statement.strip()
+                if statement:
+                    cur.execute(statement)
+        conn.commit()
+    logger.info("Datenbank-Schema geprüft/initialisiert")
 
 
 def get_sync_token(conn, account: str) -> str | None:
