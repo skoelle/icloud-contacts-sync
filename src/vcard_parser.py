@@ -11,6 +11,15 @@ def _get(vcard, attr, default=None):
     return getattr(vcard, attr).value if hasattr(vcard, attr) else default
 
 
+def _scalar(val):
+    """Macht aus einem potenziellen List-Wert einen String (fuer MySQL-PARAMETER)."""
+    if val is None:
+        return None
+    if isinstance(val, (list, tuple)):
+        return ",".join(str(v) for v in val)
+    return str(val)
+
+
 def _type_str(obj) -> str:
     """Liest den TYPE-Parameter sicher aus einem vobject-Element."""
     if hasattr(obj, "type_paramlist") and obj.type_paramlist:
@@ -71,19 +80,19 @@ def parse_vcard(raw_text: str, account: str) -> dict | None:
         "account": account,
         "uid": uid,
         "etag": None,
-        "full_name": _get(vcard, "fn"),
+        "full_name": _scalar(_get(vcard, "fn")),
         "given_name": given_name,
         "family_name": family_name,
         "middle_name": middle_name,
         "prefix": prefix,
         "suffix": suffix,
-        "nickname": _get(vcard, "nickname"),
+        "nickname": _scalar(_get(vcard, "nickname")),
         "organization": org,
-        "job_title": _get(vcard, "title"),
+        "job_title": _scalar(_get(vcard, "title")),
         "department": None,
         "birthday": birthday,
         "anniversary": None,
-        "notes": _get(vcard, "note"),
+        "notes": _scalar(_get(vcard, "note")),
         "photo_base64": None,
         "emails": json.dumps(emails, ensure_ascii=False),
         "phones": json.dumps(phones, ensure_ascii=False),
