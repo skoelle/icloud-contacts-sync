@@ -42,7 +42,7 @@ Volume in den Container gemountet.
 Falls Datenbank und Benutzer noch nicht existieren, führe dieses Skript einmalig aus:
 
 ```bash
-mysql -u root -p < mariadb-setup.sql
+mysql -u root -p < sql\db-and-user.sql
 ```
 
 ## 4. Umgebungsvariablen konfigurieren
