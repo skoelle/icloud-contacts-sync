@@ -190,6 +190,36 @@
             font-style: italic;
             font-size: 0.875rem;
         }
+
+        .photo-dialog {
+            border: none;
+            border-radius: 12px;
+            padding: 0;
+            max-width: 90vw;
+            max-height: 90vh;
+            background: transparent;
+        }
+
+        .photo-dialog::backdrop {
+            background: rgba(0, 0, 0, 0.85);
+        }
+
+        .photo-dialog img {
+            display: block;
+            max-width: 90vw;
+            max-height: 85vh;
+            border-radius: 8px;
+            object-fit: contain;
+        }
+
+        .contact-photo {
+            cursor: pointer;
+            transition: transform 0.15s ease;
+        }
+
+        .contact-photo:hover {
+            transform: scale(1.03);
+        }
     </style>
 </head>
 <body>
@@ -211,7 +241,7 @@
                 </div>
                 <div style="display:flex;flex-direction:column;align-items:center;gap:0.3rem">
                     {% if contact.photo_url %}
-                    <img src="{{ contact.photo_url }}" alt="Foto" class="contact-photo" onerror="this.style.display='none'">
+                    <img src="{{ contact.photo_url }}" alt="Foto" class="contact-photo" onerror="this.style.display='none'" onclick="document.getElementById('photo-dialog').showModal()">
                     {% endif %}
                     {% if show_all and contact.account %}
                     <span class="badge">Account: {{ contact.account }}</span>
@@ -320,5 +350,11 @@
             {% endif %}
         </div>
     </div>
+
+    {% if contact.photo_url %}
+    <dialog id="photo-dialog" class="photo-dialog" onclick="if(event.target===this)this.close()">
+        <img src="{{ contact.photo_url }}" alt="Foto" onerror="this.parentElement.close()">
+    </dialog>
+    {% endif %}
 </body>
 </html>
