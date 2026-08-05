@@ -15,8 +15,7 @@ antwortet der Server mit 403 valid-sync-token, dann fällt der Client automatisc
 auf einen vollständigen Re-Sync zurück.
 """
 import logging
-import os
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
 from xml.etree import ElementTree as ET
 
 import requests
@@ -36,11 +35,10 @@ class SyncTokenInvalid(Exception):
 
 
 class CardDAVClient:
-    def __init__(self, base_url: str, username: str, password: str, timeout: int = 30, account_name: str = ""):
+    def __init__(self, base_url: str, username: str, password: str, timeout: int = 30):
         self.base_url = base_url
         self.auth = (username, password)
         self.timeout = timeout
-        self.account_name = account_name
         self.session = requests.Session()
 
     def _request(self, method: str, url: str, body: str, depth: str = "0"):
@@ -51,7 +49,6 @@ class CardDAVClient:
         if resp.status_code == 403 and "valid-sync-token" in resp.text:
             raise SyncTokenInvalid("sync-token vom Server abgelehnt")
         resp.raise_for_status()
-        self._dump_debug(method, url, resp)
         return ET.fromstring(resp.content)
 
     def discover_principal(self) -> str:
@@ -151,16 +148,3 @@ class CardDAVClient:
         if href.startswith("http"):
             return href
         return urljoin(self.base_url, href)
-
-    def _dump_debug(self, method: str, url: str, resp: requests.Response):
-        dump_dir = f"/app/debug/carddav/{self.account_name}" if self.account_name else "/app/debug/carddav"
-        try:
-            os.makedirs(dump_dir, exist_ok=True)
-            path = urlparse(url).path.rstrip("/").replace("/", "_") or "root"
-            filename = f"{method}_{path}.xml"
-            filepath = os.path.join(dump_dir, filename)
-            with open(filepath, "w", encoding="utf-8") as f:
-                f.write(resp.text)
-            logger.debug("CardDAV-Debug-Dump: %s", filepath)
-        except Exception:
-            logger.warning("Debug-Dump fehlgeschlagen", exc_info=True)
