@@ -116,10 +116,6 @@ class CardDAVClient:
                     deleted_hrefs.append(href)
                 continue
 
-            if not any(s in status_text for s in ("200", "207")):
-                logger.warning("Unerwarteter Status %s für %s, überspringe", status_text, href)
-                continue
-
             etag_el = response.find("d:getetag", NS)
             etag = etag_el.text if etag_el is not None else None
 
