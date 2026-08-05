@@ -154,6 +154,60 @@ def get_contact_count(conn, account: str | None) -> int:
         return cur.fetchone()["total"]
 
 
+def search_contacts_without_photo(conn, account: str | None) -> list[dict]:
+    where_clause, params = _account_filter_clause(account)
+    name_cond = "AND given_name IS NOT NULL AND given_name != '' AND family_name IS NOT NULL AND family_name != ''"
+    city_cond = "AND (JSON_SEARCH(addresses, 'one', '%', NULL, '$[*].city') IS NOT NULL)"
+    with conn.cursor() as cur:
+        cur.execute(
+            f"""SELECT id, full_name, given_name, middle_name, family_name,
+                       prefix, suffix, organization, birthday, account, photo_url
+                FROM contacts {where_clause}
+                AND photo_base64 IS NULL AND photo_url IS NULL
+                {name_cond} {city_cond}
+                AND family_name != 'X'
+                ORDER BY full_name""",
+            params,
+        )
+        return cur.fetchall()
+
+
+def search_contacts_without_city(conn, account: str | None) -> list[dict]:
+    where_clause, params = _account_filter_clause(account)
+    name_cond = "AND given_name IS NOT NULL AND given_name != '' AND family_name IS NOT NULL AND family_name != ''"
+    contact_cond = "AND (JSON_LENGTH(phones) > 0 OR JSON_LENGTH(emails) > 0)"
+    city_cond = "AND (JSON_LENGTH(addresses) = 0 OR JSON_SEARCH(addresses, 'one', '%', NULL, '$[*].city') IS NULL)"
+    with conn.cursor() as cur:
+        cur.execute(
+            f"""SELECT id, full_name, given_name, middle_name, family_name,
+                       prefix, suffix, organization, birthday, account, photo_url
+                FROM contacts {where_clause}
+                {name_cond} {contact_cond} {city_cond}
+                AND family_name != 'X'
+                ORDER BY full_name""",
+            params,
+        )
+        return cur.fetchall()
+
+
+def search_contacts_without_social(conn, account: str | None) -> list[dict]:
+    where_clause, params = _account_filter_clause(account)
+    name_cond = "AND given_name IS NOT NULL AND given_name != '' AND family_name IS NOT NULL AND family_name != ''"
+    contact_cond = "AND (JSON_LENGTH(phones) > 0 OR JSON_LENGTH(emails) > 0)"
+    social_cond = "AND (social_profiles IS NULL OR JSON_LENGTH(social_profiles) = 0)"
+    with conn.cursor() as cur:
+        cur.execute(
+            f"""SELECT id, full_name, given_name, middle_name, family_name,
+                       prefix, suffix, organization, birthday, account, photo_url
+                FROM contacts {where_clause}
+                {name_cond} {contact_cond} {social_cond}
+                AND family_name != 'X'
+                ORDER BY full_name""",
+            params,
+        )
+        return cur.fetchall()
+
+
 def get_upcoming_birthdays(conn, account: str | None, days: int = 7) -> list[dict]:
     where_clause, params = _account_filter_clause(account)
     today = date.today()

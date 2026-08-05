@@ -242,6 +242,44 @@
         .search-form button:hover {
             background: #0055aa;
         }
+
+        .contact-stats {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .contact-stats-left {
+            flex: 1;
+        }
+
+        .contact-stats-right {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+
+        .special-search {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.4rem 0.6rem;
+            background: #f8f9fa;
+            border-radius: 4px;
+            text-decoration: none;
+            color: inherit;
+            font-size: 0.8125rem;
+            transition: background 0.15s;
+        }
+
+        .special-search:hover {
+            background: #e9ecef;
+        }
+
+        .special-search-label {
+            color: #555;
+        }
     </style>
 </head>
 <body>
@@ -263,8 +301,23 @@
         <div class="dashboard-grid">
             <div class="box">
                 <div class="box-title">Kontakte</div>
-                <div class="stat-value">{{ contact_count }}</div>
-                <div class="stat-label">gespeicherte Kontakte</div>
+                <div class="contact-stats">
+                    <div class="contact-stats-left">
+                        <div class="stat-value">{{ contact_count }}</div>
+                        <div class="stat-label">gespeicherte Kontakte</div>
+                    </div>
+                    <div class="contact-stats-right">
+                        <a href="/search/special?type=no_photo" class="special-search">
+                            <span class="special-search-label">ohne Bild</span>
+                        </a>
+                        <a href="/search/special?type=no_city" class="special-search">
+                            <span class="special-search-label">ohne City</span>
+                        </a>
+                        <a href="/search/special?type=no_social" class="special-search">
+                            <span class="special-search-label">ohne Social</span>
+                        </a>
+                    </div>
+                </div>
             </div>
 
             <div class="box">

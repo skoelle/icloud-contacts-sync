@@ -283,6 +283,51 @@ def admin_toggle(
     return RedirectResponse(url="/admin", status_code=303)
 
 
+@app.get("/search/special", response_class=HTMLResponse)
+def web_search_special(
+    request: Request,
+    type: str = Query(...),
+    current_user: str = Depends(get_current_user),
+):
+    account_name, is_admin, show_all = _resolve_effective_account(request, current_user)
+
+    query_fn = {
+        "no_photo": db.search_contacts_without_photo,
+        "no_city": db.search_contacts_without_city,
+        "no_social": db.search_contacts_without_social,
+    }.get(type)
+
+    if not query_fn:
+        return RedirectResponse(url="/", status_code=303)
+
+    title_map = {
+        "no_photo": "Kontakte ohne Bild",
+        "no_city": "Kontakte ohne Stadt",
+        "no_social": "Kontakte ohne Social Profil",
+    }
+
+    with db.get_connection() as conn:
+        rows = query_fn(conn, account_name)
+
+    for row in rows:
+        if not row.get("full_name"):
+            row["full_name"] = db._build_full_name(row)
+
+    return templates.TemplateResponse(
+        "index.html",
+        {
+            "request": request,
+            "current_user": current_user,
+            "is_admin": is_admin,
+            "show_all": show_all,
+            "account_name": account_name or "alle Accounts",
+            "contacts": rows,
+            "search": "",
+            "search_title": title_map.get(type, "Suche"),
+        },
+    )
+
+
 @app.get("/search", response_class=HTMLResponse)
 def web_search(
     request: Request,

@@ -6,7 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-    <title>Kontakte – {{ account_name }}</title>
+    <title>{% if search_title %}{{ search_title }} – {% endif %}{{ account_name }}</title>
     <style>
         * {
             margin: 0;
@@ -175,8 +175,8 @@
         <h1><a href="/" style="text-decoration:none;color:inherit;display:inline-flex;align-items:center;gap:0.4rem"><img src="/static/favicon.svg" alt="" style="height:1.5em;width:1.5em;vertical-align:middle">Kontakte</a></h1>
         <div class="meta">
             Angemeldet als <strong>{{ current_user }}</strong>
-            {% if is_admin %}(<a href="/admin" style="color:inherit">Admin</a>{% if show_all %}, sieht alle Accounts{% endif %}){% else %}(Account: {{ account_name }}){% endif %}
-            · {{ contacts|length }} Kontakte (max. 200 angezeigt)
+            {% if is_admin %}(<a href="/admin" style="color:inherit">Admin</a>            {% if show_all %}, sieht alle Accounts{% endif %}){% else %}(Account: {{ account_name }}){% endif %}
+            · {% if search_title %}{{ search_title }}: {% endif %}{{ contacts|length }} Kontakte (max. 200 angezeigt)
         </div>
 
         <form class="search-form" method="get" action="/search">
