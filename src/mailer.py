@@ -20,7 +20,7 @@ def fetch_todays_birthdays(conn) -> list[dict]:
     today = date.today()
     with conn.cursor() as cur:
         cur.execute(
-            """SELECT account, full_name, birthday
+            """SELECT id, account, full_name, birthday
                FROM contacts
                WHERE birthday IS NOT NULL
                  AND MONTH(birthday) = %s
@@ -60,11 +60,81 @@ def build_message(birthdays: list[dict]) -> EmailMessage:
         return msg
 
     msg["Subject"] = f"Geburtstage heute ({today.isoformat()}): {len(birthdays)}"
-    lines = [f"Heutige Geburtstage ({today.isoformat()}):", ""]
+
+    plain_lines = [f"Heutige Geburtstage ({today.isoformat()}):", ""]
     for b in birthdays:
         age = today.year - b["birthday"].year
-        lines.append(f"- {b['full_name']} (wird {age}, Account: {b['account']})")
-    msg.set_content("\n".join(lines))
+        line = f"- {b['full_name']} (wird {age}, Account: {b['account']})"
+        if Config.WEB_URL:
+            line += f"  → {Config.WEB_URL.rstrip('/')}/contacts/{b['id']}"
+        plain_lines.append(line)
+    if Config.WEB_URL:
+        plain_lines.extend(["", f"Alle Kontakte ansehen: {Config.WEB_URL}"])
+    msg.set_content("\n".join(plain_lines))
+
+    cards_html = ""
+    for b in birthdays:
+        age = today.year - b["birthday"].year
+        contact_link = f"{Config.WEB_URL.rstrip('/')}/contacts/{b['id']}" if Config.WEB_URL else ""
+        name_html = f'<a href="{contact_link}" style="color:#222;text-decoration:none;">{b["full_name"]}</a>' if contact_link else b["full_name"]
+        cards_html += f"""
+        <tr>
+          <td style="background:#fff;border-radius:8px;padding:1rem 1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;">
+              <div>
+                <div style="font-size:18px;font-weight:600;color:#222;">{name_html}</div>
+                <div style="font-size:14px;color:#666;margin-top:4px;">Account: {b['account']}</div>
+              </div>
+              <div style="display:inline-block;padding:4px 10px;border-radius:4px;font-size:12px;font-weight:500;background:#fff3cd;color:#856404;">
+                🎂 wird {age}
+              </div>
+            </div>
+          </td>
+        </tr>
+        <tr><td style="height:12px;"></td></tr>"""
+
+    link_html = ""
+    if Config.WEB_URL:
+        link_html = f"""
+          <tr>
+            <td style="padding-top:24px;text-align:center;">
+              <a href="{Config.WEB_URL}" style="display:inline-block;padding:12px 24px;background:#0066cc;color:#fff;text-decoration:none;border-radius:6px;font-size:14px;">Alle Kontakte ansehen</a>
+            </td>
+          </tr>"""
+
+    html = f"""<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;">
+    <tr>
+      <td align="center" style="padding:2rem 1rem;">
+        <table width="800" cellpadding="0" cellspacing="0" style="max-width:800px;width:100%;">
+          <tr>
+            <td>
+              <h1 style="font-size:24px;font-weight:600;color:#222;margin:0 0 8px 0;">Geburtstage heute</h1>
+              <p style="font-size:14px;color:#666;margin:0 0 24px 0;">{today.strftime('%d.%m.%Y')} · {len(birthdays)} Kontakte</p>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <table width="100%" cellpadding="0" cellspacing="0">
+                {cards_html}
+              </table>
+            </td>
+          </tr>
+          {link_html}
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
+
+    msg.add_alternative(html, subtype="html")
     return msg
 
 

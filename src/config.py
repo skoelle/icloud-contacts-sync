@@ -42,6 +42,7 @@ class Config:
 
     API_HOST = os.environ.get("API_HOST", "0.0.0.0")
     API_PORT = int(os.environ.get("API_PORT", "8000"))
+    WEB_URL = os.environ.get("WEB_URL", "")
 
     @classmethod
     def validate_db(cls):
