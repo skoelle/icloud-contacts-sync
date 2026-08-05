@@ -94,7 +94,7 @@ def sync_account(conn, account, href_to_uid_cache: dict):
         )
     except Exception as exc:
         logger.exception("[%s] Sync-Lauf %s fehlgeschlagen", account.name, run_id)
-        print(f"SYNC-FEHLER [{account.name}]: {exc}", file=sys.stderr)
+        print(f"SYNC-FEHLER [{account.name}]: {exc}", file=sys.stderr, flush=True)
         detail = str(exc)
         if "Unknown column" in detail:
             detail += " — Fehlende Spalte? ALTER TABLE ausführen: siehe sql/schema.sql"
@@ -103,11 +103,13 @@ def sync_account(conn, account, href_to_uid_cache: dict):
 
 
 def main() -> int:
+    print("sync.py gestartet", file=sys.stderr, flush=True)
     try:
         Config.validate_db()
         accounts = Config.load_accounts()
     except RuntimeError as exc:
         logger.error(str(exc))
+        print(f"SYNC-KONFIGURATIONSFEHLER: {exc}", file=sys.stderr, flush=True)
         return 1
 
     exit_code = 0
@@ -115,7 +117,8 @@ def main() -> int:
         for account in accounts:
             try:
                 sync_account(conn, account, {})
-            except Exception:
+            except Exception as exc:
+                print(f"SYNC-FEHLER [{account.name}]: {exc}", file=sys.stderr, flush=True)
                 exit_code = 1
     return exit_code
 
