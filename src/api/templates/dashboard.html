@@ -252,6 +252,11 @@
                     · {{ last_sync.contacts_deleted }} gelöscht
                     {% endif %}
                 </div>
+                {% if last_sync_with_changes %}
+                <div class="sync-detail">
+                    {{ last_sync_with_changes.started_at }} · {{ last_sync_with_changes.contacts_upserted }} aktualisiert
+                </div>
+                {% endif %}
                 {% if last_sync.error_message %}
                 <div class="sync-detail" style="color: #dc3545; margin-top: 0.5rem;">
                     {{ last_sync.error_message }}

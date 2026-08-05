@@ -195,9 +195,24 @@ def web_dashboard(
             )
             last_sync = cur.fetchone()
 
+            change_filter = "AND account = %s" if account_name else ""
+            change_params = [account_name] if account_name else []
+            cur.execute(
+                f"""SELECT started_at, contacts_upserted
+                    FROM sync_runs
+                    WHERE contacts_upserted > 0 {change_filter}
+                    ORDER BY started_at DESC
+                    LIMIT 1""",
+                change_params,
+            )
+            last_sync_with_changes = cur.fetchone()
+
     if last_sync:
         last_sync["started_at"] = str(last_sync["started_at"])
         last_sync["finished_at"] = str(last_sync["finished_at"]) if last_sync["finished_at"] else None
+
+    if last_sync_with_changes:
+        last_sync_with_changes["started_at"] = str(last_sync_with_changes["started_at"])
 
     return templates.TemplateResponse(
         "dashboard.html",
@@ -209,6 +224,7 @@ def web_dashboard(
             "contact_count": contact_count,
             "upcoming_birthdays": upcoming_birthdays,
             "last_sync": last_sync,
+            "last_sync_with_changes": last_sync_with_changes,
             "current_year": date.today().year,
         },
     )
