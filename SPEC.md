@@ -34,16 +34,16 @@ außerhalb des Apple-Ökosystems.
 
 ## 3. Multi-User-Konfiguration
 
-- Datei `config/accounts.yml` (gemountet, nicht im Image, nicht im Git,
+- Datei `config/accounts.json` (gemountet, nicht im Image, nicht im Git,
   siehe `.gitignore`), Struktur:
-  ```yaml
-  accounts:
-    - name: markus
-      apple_email: markus@icloud.com
-      apple_app_password: "xxxx-xxxx-xxxx-xxxx"
-    - name: partner
-      apple_email: partner@icloud.com
-      apple_app_password: "yyyy-yyyy-yyyy-yyyy"
+  ```json
+  {
+    "accounts": [
+      { "name": "markus", "apple_email": "markus@icloud.com", "apple_app_password": "xxxx-xxxx-xxxx-xxxx", "authelia_user": "mmustermann" },
+      { "name": "partner", "apple_email": "partner@icloud.com", "apple_app_password": "yyyy-yyyy-yyyy-yyyy", "authelia_user": "pmustermann" }
+    ],
+    "admins": ["mmustermann"]
+  }
   ```
 - `name` ist der interne, eindeutige Account-Bezeichner und wird 1:1 als
   `account`-Spalte in `contacts`, `sync_state` und `sync_runs`
@@ -107,9 +107,10 @@ Siehe `sql/schema.sql`. Wichtigste Änderungen gegenüber v1:
   Eintrag für den heutigen Tag geprüft; existiert bereits einer, wird
   der Lauf ohne erneuten Versand beendet.
 - Feature-Flag `MAILER_ENABLED` erlaubt das komplette Deaktivieren ohne
-  Codeänderung.
-- E-Mail-Inhalt aktuell reiner Text (Name, Alter, Account), HTML-Format
-  ist als spätere Erweiterung denkbar, aber nicht im Scope.
+  Codeänderung (Default: `false`).
+- E-Mail-Inhalt: HTML-E-Mail mit stylisierten Geburtstagskarten
+  (Name, Alter, Account, Link zur Kontakt-Detailseite falls `WEB_URL`
+  gesetzt). Zusätzlich reiner Text-Alternative als Fallback.
 
 ## 7. Konfiguration (Umgebungsvariablen)
 
@@ -120,9 +121,9 @@ Siehe `sql/schema.sql`. Wichtigste Änderungen gegenüber v1:
 | MARIADB_DATABASE      | nein    | Default: contacts                                   |
 | MARIADB_USER          | ja      | DB-Benutzer mit Schreibrechten                      |
 | MARIADB_PASSWORD      | ja      | Passwort des DB-Benutzers                           |
-| ACCOUNTS_CONFIG_PATH  | nein    | Default: /app/config/accounts.yml                   |
+| ACCOUNTS_CONFIG_PATH  | nein    | Default: /app/config/accounts.json                  |
 | LOG_LEVEL             | nein    | Default: INFO                                       |
-| MAILER_ENABLED        | nein    | Default: true, deaktiviert Mailer bei false          |
+| MAILER_ENABLED        | nein    | Default: false, aktiviert Mailer bei true            |
 | SMTP_HOST             | ja (Mailer) | SMTP-Relay-Host                                 |
 | SMTP_PORT             | nein    | Default: 587                                        |
 | SMTP_USER             | nein    | leer, falls Relay ohne Auth                         |
@@ -131,18 +132,26 @@ Siehe `sql/schema.sql`. Wichtigste Änderungen gegenüber v1:
 | MAIL_FROM             | ja (Mailer) | Absenderadresse                                 |
 | MAIL_TO               | ja (Mailer) | Empfängeradresse(n)                             |
 | MAIL_SEND_HOUR        | nein    | Default: 7, Stunde (0-23) für täglichen Mailversand |
+| WEB_URL               | nein    | Web-URL für Links in Geburtstags-Mails (z.B. https://kontakte.example.de) |
+| AUTH_REMOTE_USER_HEADER | nein  | Default: Remote-User, Header-Name für Authelia-User |
+| API_HOST              | nein    | Default: 0.0.0.0, Bindungs-Adresse des API-Services |
+| API_PORT              | nein    | Default: 8000, Port des API-Services                |
 
 Secrets werden weiterhin als klassische Umgebungsvariablen übergeben,
-mit Ausnahme der Multi-Account-Zugangsdaten, die aus `accounts.yml`
+mit Ausnahme der Multi-Account-Zugangsdaten, die aus `accounts.json`
 gelesen werden (per Volume-Mount, nicht im Image, nicht im Git).
 
 ## 8. Container-Image
 
-- Basis: `python:3.12-slim`, Zeitsteuerung über `supercronic`.
-- Zwei Cron-Einträge im dynamisch generierten Crontab: Sync (`*/15`)
-  und Mailer (`0 <MAIL_SEND_HOUR> * * *`).
+- Basis: `python:3.12-slim`.
+- Python-basierter Scheduler (`src/scheduler.py`) als PID 1 im Container:
+  - Keine externe Cron-Abhängigkeit (kein supercronic nötig).
+  - Sync: alle 15 Minuten (`SYNC_INTERVAL_MINUTES`).
+  - Mailer: täglich um `MAIL_SEND_HOUR` Uhr (falls `MAILER_ENABLED=true`).
+  - Initialer Sync sofort beim Container-Start.
+  - Sauberes Herunterfahren via SIGTERM/SIGINT.
 - Läuft als non-root User (`syncuser`, UID 10001).
-- `HEALTHCHECK` prüft weiterhin die Marker-Datei des letzten
+- `HEALTHCHECK` prüft die Marker-Datei `/tmp/last_sync_ok` des letzten
   erfolgreichen Sync-Laufs.
 
 ## 9. CI/CD (GitHub Actions)
@@ -174,7 +183,7 @@ Unverändert gegenüber v1:
 - **Weitere Quellen**: Google Contacts und Microsoft 365 nach
   demselben Account-Muster (eigene `source`-Werte, eigene
   Sync-Strategie je Anbieter-API).
-- **HTML-Mails, mehrere Empfänger je Kontakt, Vorlauf-Erinnerungen**
+- **Mehrere Empfänger je Kontakt, Vorlauf-Erinnerungen**
   (z. B. "in 3 Tagen") sind funktional einfach nachrüstbar, aktuell
   aber nicht Teil des Scopes.
 
@@ -191,10 +200,10 @@ geteilt wird. Getrennt ist nur die **Rolle**, in der der Container läuft.
   sowohl `src/sync.py`, `src/mailer.py` als auch das komplette
   `src/api/`-Package.
 - `docker-compose.yml` definiert zwei Services aus demselben Image:
-  - `icloud-contacts-sync`: Standard-Entrypoint, startet `supercronic`
-    mit Sync- und Mailer-Cron (unverändert zu v2).
+  - `icloud-contacts-sync`: Standard-Entrypoint, startet den
+    Python-Scheduler (`scheduler.py`) mit Sync- und Mailer-Intervallen.
   - `icloud-contacts-api`: überschreibt `command` komplett mit
-    `uvicorn api.main:app`, ignoriert den Cron-Entrypoint des Images.
+    `uvicorn api.main:app`, ignoriert den Scheduler-Entrypoint des Images.
 - Beide Services teilen sich dieselbe MariaDB und dieselbe
   `config/accounts.json`, der API-Service greift ausschließlich lesend
   auf `contacts`, `sync_runs` zu, schreibt nichts.
@@ -232,9 +241,10 @@ geteilt wird. Getrennt ist nur die **Rolle**, in der der Container läuft.
 | Endpunkt | Beschreibung |
 |---|---|
 | `GET /` | Einfache HTML-Übersicht (Jinja2-Template), zeigt Kontakte des zugeordneten Accounts |
+| `GET /contacts/{id}` | HTML-Detailseite eines einzelnen Kontakts (Jinja2-Template) |
 | `GET /api/health` | Health-Check ohne Auth-Anforderung |
 | `GET /api/contacts` | Kontaktliste, Filter `q` (Freitext), Pagination `limit`/`offset` |
-| `GET /api/contacts/{id}` | Einzelner Kontakt |
+| `GET /api/contacts/{id}` | Einzelner Kontakt (JSON) |
 | `GET /api/contacts/birthdays/today` | Heutige Geburtstage (kontospezifisch bzw. global für Admins) |
 | `GET /api/sync-runs` | Sync-Historie (kontospezifisch bzw. global für Admins) |
 

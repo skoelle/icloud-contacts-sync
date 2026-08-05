@@ -9,7 +9,7 @@ Automated CardDAV delta-sync (RFC 6578) of multiple iCloud accounts into a share
 - **Language:** Python 3.12
 - **Framework:** FastAPI (API), PyMySQL (DB), vobject (vCard), lxml (XML), requests (HTTP)
 - **Database:** MariaDB (InnoDB, utf8mb4)
-- **Container:** python:3.12-slim, supercronic for cron
+- **Container:** python:3.12-slim, Python-based scheduler (no external cron)
 - **CI/CD:** GitHub Actions — lint (ruff), build+push (ghcr.io)
 - **Auth:** Authelia reverse-proxy header (`Remote-User`), no built-in login
 
@@ -19,11 +19,11 @@ Automated CardDAV delta-sync (RFC 6578) of multiple iCloud accounts into a share
 src/
   sync.py            — Main sync orchestrator (cron entry point)
   mailer.py          — Birthday email sender (cron entry point)
-  config.py          — Reads accounts.yml + env vars
+  config.py          — Reads accounts.json + env vars
   db.py              — MariaDB connection and queries
   carddav_client.py  — CardDAV HTTP client (sync-collection, addressbook-query)
   vcard_parser.py    — vCard parsing via vobject
-  scheduler.py       — supercronic crontab generation
+  scheduler.py       — Python-based scheduler (PID 1 in container)
   api/
     main.py          — FastAPI app (uvicorn entry point)
     auth.py          — Remote-User header dependency
@@ -34,9 +34,9 @@ sql/
   schema.sql         — Full schema (contacts, sync_state, sync_runs, birthday_mail_log)
   db-and-user.sql    — One-time DB + user setup
 config/
-  accounts.yml       — Per-account credentials (NOT in git, volume-mounted)
+  accounts.json      — Per-account credentials (NOT in git, volume-mounted)
 docker/
-  entrypoint.sh      — Generates crontab, starts supercronic
+  entrypoint.sh      — Starts scheduler.py (or exec's custom command)
 ```
 
 ## Key Files
@@ -46,7 +46,7 @@ docker/
 | `src/sync.py` | CLI entry point for sync (`python3 sync.py`) |
 | `src/mailer.py` | CLI entry point for birthday mailer (`python3 mailer.py`) |
 | `src/api/main.py` | FastAPI app entry point (`uvicorn api.main:app`) |
-| `src/config.py` | Loads `accounts.yml` + all env vars |
+| `src/config.py` | Loads `accounts.json` + all env vars |
 | `src/db.py` | All MariaDB queries |
 | `sql/schema.sql` | Canonical schema definition |
 | `.env.example` | All supported environment variables |
@@ -88,7 +88,7 @@ docker compose up -d
 - All source in `src/`, single package, no `setup.py`/`pyproject.toml`.
 - No comments in code unless explicitly requested.
 - Follow existing code style; no new dependencies unless absolutely necessary.
-- Secrets must never be committed. `config/accounts.yml` and `.env` are gitignored.
+- Secrets must never be committed. `config/accounts.json` and `.env` are gitignored.
 - The DB schema uses `account` column as tenant key — all queries are scoped per account.
 - JSON columns (`emails`, `phones`, etc.) store multi-value vCard fields.
 
@@ -113,11 +113,15 @@ See `.env.example` for full list. Key variables:
 
 ## Architecture Notes
 
-- Single Docker image, two roles: cron (sync+mailer) and API (uvicorn).
+- Single Docker image, two roles: scheduler (sync+mailer) and API (uvicorn).
 - API is read-only; only the sync container writes to MariaDB.
 - Sync uses CardDAV `sync-collection` (RFC 6578) for efficient delta sync.
 - Token expiry (~29 days) triggers automatic full re-sync.
 - Deleted contacts are removed from DB (no archival).
+
+## Documentation
+
+**IMPORTANT:** `README.md` and `SPEC.md` are the authoritative German-language documentation for this project. They must be kept up to date whenever code, configuration, schema, or architecture changes. Always update these files as part of any feature or fix implementation.
 
 ## Common Tasks
 
@@ -125,15 +129,18 @@ See `.env.example` for full list. Key variables:
 1. Add route in `src/api/main.py`
 2. Add Pydantic model in `src/api/schemas.py` if needed
 3. Add DB query in `src/db.py` if needed
-4. Test with: `curl -H "Remote-User: <user>" http://127.0.0.1:8000/<path>`
+4. Update endpoint table in `SPEC.md` and `README.md`
+5. Test with: `curl -H "Remote-User: <user>" http://127.0.0.1:8000/<path>`
 
 ### Adding a new contact field
 1. Add column to `contacts` table in `sql/schema.sql`
 2. Update `src/vcard_parser.py` to extract the field
 3. Update `src/db.py` upsert query
 4. Update `src/api/schemas.py` if exposing via API
+5. Update `SPEC.md` (data model section)
 
 ### Changing the sync logic
 1. Edit `src/carddav_client.py` for CardDAV protocol changes
 2. Edit `src/sync.py` for orchestration changes
-3. Test with a single account first: set `LOG_LEVEL=DEBUG`
+3. Update `SPEC.md` if sync behavior changes
+4. Test with a single account first: set `LOG_LEVEL=DEBUG`

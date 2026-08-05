@@ -28,14 +28,16 @@ Für jede Apple-ID, die du syncen willst:
 ## 2. Multi-User-Konfiguration anlegen
 
 ```
-cp config/accounts.yml.example config/accounts.yml
-vim config/accounts.yml
+cp config/accounts.json.example config/accounts.json
+vim config/accounts.json
 ```
 
 Trage für jede Apple-ID einen Eintrag mit eindeutigem `name`,
-`apple_email` und `apple_app_password` ein. Diese Datei bleibt lokal
-auf dem Host, sie ist in `.gitignore` ausgeschlossen und wird nur als
-Volume in den Container gemountet.
+`apple_email`, `apple_app_password` und `authelia_user` ein. Diese Datei
+bleibt lokal auf dem Host, sie ist in `.gitignore` ausgeschlossen und
+wird nur als Volume in den Container gemountet.
+
+Siehe `config/README.md` für eine vollständige Beschreibung der Felder.
 
 ## 3. Datenbank vorbereiten
 
@@ -109,6 +111,8 @@ ORDER BY sent_date DESC LIMIT 10;
 
 - Läuft automatisch täglich um die in `MAIL_SEND_HOUR` konfigurierte
   Stunde (Default 7 Uhr) innerhalb desselben Containers.
+- Versendet eine HTML-E-Mail mit stylisierten Geburtstagskarten und
+  Links zur Kontakt-Detailseite (falls `WEB_URL` gesetzt).
 - Über `MAILER_ENABLED=false` lässt sich der Mailer ganz abschalten,
   ohne den Kontakt-Sync zu beeinträchtigen.
 - Manueller Testlauf im laufenden Container:
@@ -143,10 +147,6 @@ python3 mailer.py
   keine vollständige Historie: ein gelöschter iCloud-Kontakt wird auch
   aus MariaDB entfernt, ohne Archiv.
 - Nur iCloud als Quelle, Google/Microsoft sind nicht Teil dieses Repos.
-- Eine separate Web-Ansicht mit API ist als eigenständiges,
-  nachgelagertes Container-Projekt geplant, das nur lesend auf dieselbe
-  MariaDB zugreift (siehe SPEC.md, Abschnitt 11).
-
 
 ## 11. Web-Ansicht und API (interner Zugriff über Authelia)
 
@@ -205,9 +205,10 @@ Zugriff ohne den Reverse-Proxy ist damit nicht möglich.
 | Methode | Pfad | Beschreibung |
 |---------|------|--------------|
 | `GET` | `/` | Web-UI — zeigt Kontakte des eingeloggten Users (HTML) |
+| `GET` | `/contacts/{id}` | Web-UI — Detailseite eines einzelnen Kontakts |
 | `GET` | `/api/health` | Health Check (`{"status": "ok"}`), kein Login nötig |
 | `GET` | `/api/contacts` | Kontaktsuche mit Pagination (`?q=...&limit=...&offset=...`) |
-| `GET` | `/api/contacts/{contact_id}` | Einzelnen Kontakt per ID abrufen |
+| `GET` | `/api/contacts/{id}` | Einzelnen Kontakt per ID abrufen |
 | `GET` | `/api/contacts/birthdays/today` | Heutige Geburtstage |
 | `GET` | `/api/sync-runs` | Letzte 50 Sync-Runs (Status, Zeitstempel, Fehler) |
 
