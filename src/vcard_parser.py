@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Stefan Koelle (https://stefankoelle.de)
+# Licensed under the MIT License. See LICENSE file in project root for details.
 """Parst rohen vCard-Text in ein flaches dict, passend zum contacts-Schema."""
 import json
 import logging

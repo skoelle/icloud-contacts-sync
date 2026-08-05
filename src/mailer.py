@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Stefan Koelle (https://stefankoelle.de)
+# Licensed under the MIT License. See LICENSE file in project root for details.
 """Sendet eine tägliche E-Mail mit allen heutigen Geburtstagskindern aus der
 contacts-Tabelle (über alle Accounts hinweg). Wird per Cron einmal täglich
 um MAIL_SEND_HOUR aufgerufen. Verhindert Doppelversand am selben Tag über

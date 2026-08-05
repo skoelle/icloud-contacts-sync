@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Stefan Koelle (https://stefankoelle.de)
+# Licensed under the MIT License. See LICENSE file in project root for details.
 """Einstiegspunkt für einen Sync-Lauf über alle konfigurierten Accounts.
 Für jeden Account wird ein Delta-Sync per CardDAV sync-collection (RFC 6578)
 durchgeführt. Beim allerersten Lauf eines Accounts (kein gespeicherter

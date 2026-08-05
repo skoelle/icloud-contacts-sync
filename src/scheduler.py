@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Stefan Koelle (https://stefankoelle.de)
+# Licensed under the MIT License. See LICENSE file in project root for details.
 """Einfacher Cron-Scheduler fuer Sync und Mailer.
 Ersetzt supercronic komplett — keine externe Abhaengigkeit noetig.
 

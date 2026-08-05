@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Stefan Koelle (https://stefankoelle.de)
+# Licensed under the MIT License. See LICENSE file in project root for details.
 """Authelia-Integration: liest den vom Reverse-Proxy weitergereichten
 Remote-User-Header und mappt ihn per accounts.json auf einen internen
 Account-Namen. Kein eigenes Login, Authelia übernimmt die eigentliche

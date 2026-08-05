@@ -5,6 +5,7 @@ WORKDIR /app
 COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
+COPY LICENSE .
 COPY src/ /app/
 COPY sql/ /app/sql/
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh

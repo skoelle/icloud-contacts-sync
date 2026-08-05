@@ -221,3 +221,7 @@ eigenen Accounts.
 ```
 curl -H "Remote-User: mmustermann" http://127.0.0.1:8000/api/contacts
 ```
+
+## License
+
+Licensed under the [MIT License](LICENSE) - Copyright (c) 2026 Stefan Koelle (https://stefankoelle.de)

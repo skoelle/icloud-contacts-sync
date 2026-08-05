@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Stefan Koelle (https://stefankoelle.de)
+# Licensed under the MIT License. See LICENSE file in project root for details.
 """MariaDB-Anbindung: Delta-Sync-Strategie (Upsert für Änderungen, gezieltes Löschen für Removals)."""
 import logging
 import os

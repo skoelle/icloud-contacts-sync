@@ -144,3 +144,9 @@ See `.env.example` for full list. Key variables:
 2. Edit `src/sync.py` for orchestration changes
 3. Update `SPEC.md` if sync behavior changes
 4. Test with a single account first: set `LOG_LEVEL=DEBUG`
+
+## License
+
+MIT License - Copyright (c) 2026 Stefan Koelle (https://stefankoelle.de)
+- Full text in `LICENSE`
+- License headers in all source code files
