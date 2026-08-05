@@ -1,0 +1,251 @@
+<!-- Copyright (c) 2026 Stefan Koelle (https://stefankoelle.de) -->
+<!-- Licensed under the MIT License. See LICENSE file in project root for details. -->
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <title>Dashboard – {{ account_name }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            color: #222;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .nav-links a {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.5rem 1rem;
+            background: #0066cc;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            transition: background 0.15s;
+        }
+
+        .nav-links a:hover {
+            background: #0055aa;
+        }
+
+        .meta {
+            color: #666;
+            font-size: 0.875rem;
+            margin-bottom: 2rem;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (max-width: 600px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .box {
+            background: #fff;
+            border-radius: 8px;
+            padding: 1.25rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .box-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #888;
+            margin-bottom: 1rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #222;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: #666;
+            margin-top: 0.25rem;
+        }
+
+        .sync-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .status-dot.success {
+            background: #28a745;
+        }
+
+        .status-dot.failed {
+            background: #dc3545;
+        }
+
+        .status-dot.running {
+            background: #ffc107;
+        }
+
+        .sync-detail {
+            font-size: 0.875rem;
+            color: #666;
+        }
+
+        .sync-detail strong {
+            color: #333;
+        }
+
+        .birthday-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .birthday-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0.75rem;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+
+        .birthday-name {
+            font-size: 0.875rem;
+            color: #333;
+        }
+
+        .birthday-date {
+            font-size: 0.8rem;
+            color: #888;
+            white-space: nowrap;
+        }
+
+        .empty-state {
+            color: #888;
+            font-size: 0.875rem;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Dashboard</h1>
+            <div class="nav-links">
+                <a href="/search">Suche</a>
+            </div>
+        </div>
+
+        <div class="meta">
+            Angemeldet als <strong>{{ current_user }}</strong>
+            {% if is_admin %}(Admin, sieht alle Accounts){% else %}(Account: {{ account_name }}){% endif %}
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="box">
+                <div class="box-title">Kontakte</div>
+                <div class="stat-value">{{ contact_count }}</div>
+                <div class="stat-label">gespeicherte Kontakte</div>
+            </div>
+
+            <div class="box">
+                <div class="box-title">Letzter Sync</div>
+                {% if last_sync %}
+                <div class="sync-status">
+                    <div class="status-dot {{ last_sync.status }}"></div>
+                    <div class="sync-detail">
+                        <strong>{{ last_sync.status }}</strong> · {{ last_sync.sync_type }}
+                    </div>
+                </div>
+                <div class="sync-detail">
+                    {{ last_sync.started_at }}
+                    {% if last_sync.contacts_upserted is not none %}
+                    · {{ last_sync.contacts_upserted }} aktualisiert
+                    {% endif %}
+                    {% if last_sync.contacts_deleted is not none and last_sync.contacts_deleted > 0 %}
+                    · {{ last_sync.contacts_deleted }} gelöscht
+                    {% endif %}
+                </div>
+                {% if last_sync.error_message %}
+                <div class="sync-detail" style="color: #dc3545; margin-top: 0.5rem;">
+                    {{ last_sync.error_message }}
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="empty-state">Noch kein Sync durchgeführt.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="box">
+            <div class="box-title">Geburtstage – nächste 7 Tage</div>
+            {% if upcoming_birthdays %}
+            <div class="birthday-list">
+                {% for b in upcoming_birthdays %}
+                <div class="birthday-item">
+                    <div class="birthday-name">
+                        <a href="/contacts/{{ b.id }}" style="color: #0066cc; text-decoration: none;">{{ b.full_name or '(Kein Name)' }}</a>
+                        {% if b.organization %}
+                        <span style="color: #888; font-size: 0.8rem;"> · {{ b.organization }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="birthday-date">{{ b.birthday }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">Keine Geburtstage in den nächsten 7 Tagen.</div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

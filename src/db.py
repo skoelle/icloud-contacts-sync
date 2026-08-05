@@ -5,6 +5,7 @@ import logging
 import os
 import uuid
 from contextlib import contextmanager
+from datetime import date
 
 import pymysql
 from pymysql.cursors import DictCursor
@@ -119,6 +120,42 @@ def delete_contacts_by_href_uids(conn, account: str, uids: list[str]):
             [account] + uids,
         )
     conn.commit()
+
+
+def _account_filter_clause(account_name: str | None) -> tuple[str, list]:
+    if account_name is None:
+        return "", []
+    return "WHERE account = %s", [account_name]
+
+
+def get_contact_count(conn, account: str | None) -> int:
+    where_clause, params = _account_filter_clause(account)
+    with conn.cursor() as cur:
+        cur.execute(f"SELECT COUNT(*) AS total FROM contacts {where_clause}", params)
+        return cur.fetchone()["total"]
+
+
+def get_upcoming_birthdays(conn, account: str | None, days: int = 7) -> list[dict]:
+    where_clause, params = _account_filter_clause(account)
+    today = date.today()
+    with conn.cursor() as cur:
+        cur.execute(
+            f"""SELECT id, full_name, organization, birthday, account
+                FROM contacts {where_clause}
+                {"AND" if where_clause else "WHERE"} birthday IS NOT NULL
+                AND (
+                    (MONTH(birthday) > %s)
+                    OR (MONTH(birthday) = %s AND DAY(birthday) >= %s)
+                )
+                AND (
+                    (MONTH(birthday) < %s)
+                    OR (MONTH(birthday) = %s AND DAY(birthday) <= %s + %s)
+                )
+                ORDER BY MONTH(birthday), DAY(birthday)""",
+            params + [today.month, today.month, today.day,
+                       today.month, today.month, today.day, days],
+        )
+        return cur.fetchall()
 
 
 def _sanitize_contact(c: dict) -> dict:

@@ -11,15 +11,15 @@ import json
 import logging
 from datetime import date
 
-from fastapi import FastAPI, Depends, Query, Request
+from fastapi import Depends, FastAPI, Query, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from config import Config
 import db
 from api.auth import get_current_user, resolve_account_for_user
 from api.schemas import ContactListResponse, ContactOut, SyncRunOut
+from config import Config
 
 logging.basicConfig(level=Config.LOG_LEVEL, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("api")
@@ -129,6 +129,25 @@ def birthdays_today(current_user: str = Depends(get_current_user)):
     return [_row_to_contact_out(r) for r in rows]
 
 
+@app.get("/api/contacts/birthdays/upcoming")
+def birthdays_upcoming(
+    days: int = Query(default=7, ge=1, le=90),
+    current_user: str = Depends(get_current_user),
+):
+    account_name, is_admin = resolve_account_for_user(current_user)
+    with db.get_connection() as conn:
+        rows = db.get_upcoming_birthdays(conn, account_name, days)
+    return {"days": days, "items": rows}
+
+
+@app.get("/api/contacts/count")
+def contact_count(current_user: str = Depends(get_current_user)):
+    account_name, is_admin = resolve_account_for_user(current_user)
+    with db.get_connection() as conn:
+        total = db.get_contact_count(conn, account_name)
+    return {"total": total}
+
+
 @app.get("/api/sync-runs", response_model=list[SyncRunOut])
 def list_sync_runs(current_user: str = Depends(get_current_user)):
     account_name, is_admin = resolve_account_for_user(current_user)
@@ -153,7 +172,47 @@ def list_sync_runs(current_user: str = Depends(get_current_user)):
 
 
 @app.get("/", response_class=HTMLResponse)
-def web_index(
+def web_dashboard(
+    request: Request,
+    current_user: str = Depends(get_current_user),
+):
+    account_name, is_admin = resolve_account_for_user(current_user)
+
+    with db.get_connection() as conn:
+        contact_count = db.get_contact_count(conn, account_name)
+        upcoming_birthdays = db.get_upcoming_birthdays(conn, account_name, 7)
+        where_clause, params = _account_filter_clause(account_name)
+        with conn.cursor() as cur:
+            cur.execute(
+                f"""SELECT id, account, sync_type, started_at, finished_at, status,
+                           contacts_upserted, contacts_deleted, error_message
+                    FROM sync_runs {where_clause}
+                    ORDER BY started_at DESC
+                    LIMIT 1""",
+                params,
+            )
+            last_sync = cur.fetchone()
+
+    if last_sync:
+        last_sync["started_at"] = str(last_sync["started_at"])
+        last_sync["finished_at"] = str(last_sync["finished_at"]) if last_sync["finished_at"] else None
+
+    return templates.TemplateResponse(
+        "dashboard.html",
+        {
+            "request": request,
+            "current_user": current_user,
+            "is_admin": is_admin,
+            "account_name": account_name or "alle Accounts",
+            "contact_count": contact_count,
+            "upcoming_birthdays": upcoming_birthdays,
+            "last_sync": last_sync,
+        },
+    )
+
+
+@app.get("/search", response_class=HTMLResponse)
+def web_search(
     request: Request,
     search: str | None = Query(default=None),
     current_user: str = Depends(get_current_user),
@@ -215,7 +274,7 @@ def web_contact(
 
     if not row:
         from fastapi.responses import RedirectResponse
-        return RedirectResponse(url="/", status_code=303)
+        return RedirectResponse(url="/search", status_code=303)
 
     contact = _row_to_contact_out(row)
 

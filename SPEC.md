@@ -240,12 +240,15 @@ geteilt wird. Getrennt ist nur die **Rolle**, in der der Container läuft.
 
 | Endpunkt | Beschreibung |
 |---|---|
-| `GET /` | Einfache HTML-Übersicht (Jinja2-Template), zeigt Kontakte des zugeordneten Accounts |
+| `GET /` | Dashboard mit Kontaktdaten-Übersicht, letzten Sync-Status und Geburtstagen der nächsten 7 Tage (HTML) |
+| `GET /search` | HTML-Übersicht mit Suchfunktion, zeigt Kontakte des zugeordneten Accounts |
 | `GET /contacts/{id}` | HTML-Detailseite eines einzelnen Kontakts (Jinja2-Template) |
 | `GET /api/health` | Health-Check ohne Auth-Anforderung |
 | `GET /api/contacts` | Kontaktliste, Filter `q` (Freitext), Pagination `limit`/`offset` |
 | `GET /api/contacts/{id}` | Einzelner Kontakt (JSON) |
+| `GET /api/contacts/count` | Anzahl der Kontakte des zugeordneten Accounts |
 | `GET /api/contacts/birthdays/today` | Heutige Geburtstage (kontospezifisch bzw. global für Admins) |
+| `GET /api/contacts/birthdays/upcoming` | Geburtstage der nächsten N Tage (Parameter `days`, Default 7) |
 | `GET /api/sync-runs` | Sync-Historie (kontospezifisch bzw. global für Admins) |
 
 ### 12.5 Netzwerkkontext

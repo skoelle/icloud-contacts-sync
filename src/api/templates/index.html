@@ -173,11 +173,11 @@
             · {{ contacts|length }} Kontakte (max. 200 angezeigt)
         </div>
 
-        <form class="search-form" method="get" action="/">
+        <form class="search-form" method="get" action="/search">
             <input type="text" name="search" value="{{ search }}" placeholder="Suche nach Name oder Organisation...">
             <button type="submit">Suchen</button>
             {% if search %}
-            <a href="/">Zurücksetzen</a>
+            <a href="/search">Zurücksetzen</a>
             {% endif %}
         </form>
 
