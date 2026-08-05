@@ -27,6 +27,12 @@
             padding: 2rem 1rem;
         }
 
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: #222;
+        }
+
         .back-link {
             display: inline-flex;
             align-items: center;
@@ -44,7 +50,7 @@
         .contact-card {
             background: #fff;
             border-radius: 8px;
-            padding: 1.5rem;
+            padding: 1rem 1.25rem;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
 
@@ -182,7 +188,7 @@
 </head>
 <body>
     <div class="container">
-        <h1 style="font-size:1.5rem;margin-bottom:0.5rem;color:#222"><a href="/" style="text-decoration:none;color:inherit;display:inline-flex;align-items:center;gap:0.4rem"><img src="/static/favicon.svg" alt="" style="height:1.5em;width:1.5em;vertical-align:middle">Kontakte</a></h1>
+        <h1><a href="/" style="text-decoration:none;color:inherit;display:inline-flex;align-items:center;gap:0.4rem"><img src="/static/favicon.svg" alt="" style="height:1.5em;width:1.5em;vertical-align:middle">Kontakte</a></h1>
         <a href="/search{% if search %}?search={{ search }}{% endif %}" class="back-link">← Zurück zur Liste</a>
 
         <div class="contact-card">
