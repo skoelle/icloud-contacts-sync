@@ -179,6 +179,41 @@
             text-decoration: underline;
         }
 
+        .tiles-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+        }
+
+        .tile {
+            padding: 0.75rem;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+
+        .tile-label {
+            font-size: 0.7rem;
+            color: #888;
+            text-transform: capitalize;
+            margin-bottom: 0.25rem;
+            line-height: 1.3;
+        }
+
+        .tile-value {
+            font-size: 0.875rem;
+            color: #333;
+            word-break: break-word;
+        }
+
+        .tile-value a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+
+        .tile-value a:hover {
+            text-decoration: underline;
+        }
+
         .birthday-highlight {
             display: inline-flex;
             align-items: center;
@@ -254,6 +289,12 @@
             transform: scale(1.03);
         }
 
+        @media (max-width: 600px) {
+            .tiles-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
         @media (max-width: 1450px) {
             .custom-links-box {
                 display: none;
@@ -299,11 +340,11 @@
                 {% if contact.emails %}
                 <div class="section">
                     <div class="section-title">E-Mail</div>
-                    <div class="section-list">
+                    <div class="tiles-grid">
                         {% for email in contact.emails %}
-                        <div class="section-item">
-                            <span class="section-item-label">{{ email.type }}</span>
-                            <span class="section-item-value"><a href="mailto:{{ email.value }}">{{ email.value }}</a></span>
+                        <div class="tile">
+                            <div class="tile-label">{{ email.type }}</div>
+                            <div class="tile-value"><a href="mailto:{{ email.value }}">{{ email.value }}</a></div>
                         </div>
                         {% endfor %}
                     </div>
@@ -313,11 +354,11 @@
                 {% if contact.phones %}
                 <div class="section">
                     <div class="section-title">Telefon</div>
-                    <div class="section-list">
+                    <div class="tiles-grid">
                         {% for phone in contact.phones %}
-                        <div class="section-item">
-                            <span class="section-item-label">{{ phone.type }}</span>
-                            <span class="section-item-value"><a href="tel:{{ phone.value }}">{{ phone.value }}</a></span>
+                        <div class="tile">
+                            <div class="tile-label">{{ phone.type }}</div>
+                            <div class="tile-value"><a href="tel:{{ phone.value }}">{{ phone.value }}</a></div>
                         </div>
                         {% endfor %}
                     </div>
@@ -327,15 +368,15 @@
                 {% if contact.addresses %}
                 <div class="section">
                     <div class="section-title">Adresse</div>
-                    <div class="section-list">
+                    <div class="tiles-grid">
                         {% for addr in contact.addresses %}
-                        <div class="section-item">
-                            <span class="section-item-label">{{ addr.type }}</span>
-                            <span class="section-item-value">
+                        <div class="tile">
+                            <div class="tile-label">{{ addr.type }}</div>
+                            <div class="tile-value">
                                 {{ addr.street }}<br>
                                 {% if addr.zip %}{{ addr.zip }} {% endif %}{{ addr.city }}<br>
                                 {{ addr.region }}{% if addr.region and addr.country %}, {% endif %}{{ addr.country }}
-                            </span>
+                            </div>
                         </div>
                         {% endfor %}
                     </div>
@@ -345,11 +386,11 @@
                 {% if contact.urls %}
                 <div class="section">
                     <div class="section-title">Website</div>
-                    <div class="section-list">
+                    <div class="tiles-grid">
                         {% for url in contact.urls %}
-                        <div class="section-item">
-                            <span class="section-item-label">{{ url.type }}</span>
-                            <span class="section-item-value"><a href="{{ url.value }}" target="_blank">{{ url.value }}</a></span>
+                        <div class="tile">
+                            <div class="tile-label">{{ url.type }}</div>
+                            <div class="tile-value"><a href="{{ url.value }}" target="_blank">{{ url.value }}</a></div>
                         </div>
                         {% endfor %}
                     </div>
@@ -359,11 +400,11 @@
                 {% if contact.social_profiles %}
                 <div class="section">
                     <div class="section-title">Soziale Profile</div>
-                    <div class="section-list">
+                    <div class="tiles-grid">
                         {% for sp in contact.social_profiles %}
-                        <div class="section-item">
-                            <span class="section-item-label">{{ sp.type }}{% if sp.username %} ({{ sp.username }}){% endif %}</span>
-                            <span class="section-item-value"><a href="{{ sp.url }}" target="_blank">{{ sp.url }}</a></span>
+                        <div class="tile">
+                            <div class="tile-label">{{ sp.type }}{% if sp.username %} ({{ sp.username }}){% endif %}</div>
+                            <div class="tile-value"><a href="{{ sp.url }}" target="_blank">{{ sp.url }}</a></div>
                         </div>
                         {% endfor %}
                     </div>
