@@ -207,6 +207,7 @@ def web_dashboard(
             "contact_count": contact_count,
             "upcoming_birthdays": upcoming_birthdays,
             "last_sync": last_sync,
+            "current_year": date.today().year,
         },
     )
 

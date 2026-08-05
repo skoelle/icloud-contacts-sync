@@ -238,7 +238,12 @@
                         <span style="color: #888; font-size: 0.8rem;"> · {{ b.organization }}</span>
                         {% endif %}
                     </div>
-                    <div class="birthday-date">{{ b.birthday }}</div>
+                    <div class="birthday-date">
+                        {{ b.birthday.strftime('%d.%m.') }}
+                        {% if b.birthday.year and b.birthday.year < current_year %}
+                        · {{ current_year - b.birthday.year }} Jahre
+                        {% endif %}
+                    </div>
                 </div>
                 {% endfor %}
             </div>
