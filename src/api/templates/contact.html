@@ -48,32 +48,24 @@
             text-decoration: underline;
         }
 
-        .contact-layout {
-            display: flex;
-            gap: 1.5rem;
-            align-items: flex-start;
-        }
-
         .contact-card {
             background: #fff;
             border-radius: 8px;
             padding: 1rem 1.25rem;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            flex: 1;
-            min-width: 0;
         }
 
         .custom-links-box {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
             width: 280px;
-            flex-shrink: 0;
             background: #fff;
             border-radius: 8px;
             padding: 1rem 1.25rem;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        .links-spacer {
-            flex: 1;
+            max-height: calc(100vh - 4rem);
+            overflow-y: auto;
         }
 
         .quicklink-item {
@@ -263,13 +255,8 @@
         }
 
         @media (max-width: 1100px) {
-            .custom-links-box,
-            .links-spacer {
+            .custom-links-box {
                 display: none;
-            }
-
-            .contact-layout {
-                display: block;
             }
         }
     </style>
@@ -279,10 +266,7 @@
         <h1><a href="/" style="text-decoration:none;color:inherit;display:inline-flex;align-items:center;gap:0.4rem"><img src="/static/favicon.svg" alt="" style="height:1.5em;width:1.5em;vertical-align:middle">Kontakte</a></h1>
         <a href="/search{% if search %}?search={{ search }}{% endif %}" class="back-link">← Zurück zur Liste</a>
 
-        <div class="contact-layout">
-            <div class="links-spacer"></div>
-
-            <div class="contact-card">
+        <div class="contact-card">
                 <div class="contact-header">
                     <div>
                         <div class="contact-name">{{ contact.full_name or '(Kein Name)' }}</div>
@@ -402,22 +386,21 @@
                     <div class="section-title">Notizen</div>
                     <div class="notes-content">{{ contact.notes }}</div>
                 </div>
-                {% endif %}
-            </div>
-
-            {% if custom_links %}
-            <div class="custom-links-box">
-                <div class="section-title">Schnelllinks</div>
-                <div class="section-list">
-                    {% for link in custom_links %}
-                    <a href="{{ link.url | replace('[fullname]', contact.full_name | urlquote) }}" target="_blank" class="quicklink-item">
-                        {{ link.label }}
-                    </a>
-                    {% endfor %}
-                </div>
-            </div>
             {% endif %}
         </div>
+
+        {% if custom_links %}
+        <div class="custom-links-box">
+            <div class="section-title">Schnelllinks</div>
+            <div class="section-list">
+                {% for link in custom_links %}
+                <a href="{{ link.url | replace('[fullname]', contact.full_name | urlquote) }}" target="_blank" class="quicklink-item">
+                    {{ link.label }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
     </div>
 
     {% if contact.photo_url %}
