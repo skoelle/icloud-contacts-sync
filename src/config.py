@@ -11,11 +11,13 @@ ICLOUD_BASE_URL = "https://contacts.icloud.com/"
 
 
 class Account:
-    def __init__(self, name: str, apple_email: str, apple_app_password: str, authelia_user: str | None):
+    def __init__(self, name: str, apple_email: str, apple_app_password: str, authelia_user: str | None,
+                 custom_links: list[dict] | None = None):
         self.name = name
         self.apple_email = apple_email
         self.apple_app_password = apple_app_password
         self.authelia_user = authelia_user
+        self.custom_links = custom_links or []
 
 
 class Config:
@@ -95,7 +97,8 @@ class Config:
             if name in seen_names:
                 raise RuntimeError(f"Account-Name '{name}' ist nicht eindeutig")
             seen_names.add(name)
-            accounts.append(Account(name, email, pwd, authelia_user))
+            custom_links = entry.get("custom_links", [])
+            accounts.append(Account(name, email, pwd, authelia_user, custom_links))
         return accounts
 
     @classmethod

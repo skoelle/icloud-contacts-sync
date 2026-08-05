@@ -4,13 +4,18 @@
       "name": "markus",
       "apple_email": "markus@icloud.com",
       "apple_app_password": "xxxx-xxxx-xxxx-xxxx",
-      "authelia_user": "mmustermann"
+      "authelia_user": "mmustermann",
+      "custom_links": [
+        {"label": "Google Suche", "url": "https://www.google.com/search?q=[fullname]"},
+        {"label": "LinkedIn", "url": "https://www.linkedin.com/search/results/all/?keywords=[fullname]"}
+      ]
     },
     {
       "name": "partner",
       "apple_email": "partner@icloud.com",
       "apple_app_password": "yyyy-yyyy-yyyy-yyyy",
-      "authelia_user": "partner.user"
+      "authelia_user": "partner.user",
+      "custom_links": []
     }
   ],
   "admins": [

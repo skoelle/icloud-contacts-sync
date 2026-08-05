@@ -354,6 +354,15 @@ def web_contact(
 
     contact = _row_to_contact_out(row)
 
+    custom_links = []
+    contact_account = contact.get("account")
+    if contact_account:
+        accounts = Config.load_accounts()
+        for acc in accounts:
+            if acc.name == contact_account:
+                custom_links = acc.custom_links
+                break
+
     return templates.TemplateResponse(
         "contact.html",
         {
@@ -363,5 +372,6 @@ def web_contact(
             "show_all": show_all,
             "contact": contact,
             "search": search or "",
+            "custom_links": custom_links,
         },
     )

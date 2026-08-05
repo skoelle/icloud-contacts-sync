@@ -48,11 +48,48 @@
             text-decoration: underline;
         }
 
+        .contact-layout {
+            display: flex;
+            gap: 1.5rem;
+            align-items: flex-start;
+        }
+
         .contact-card {
             background: #fff;
             border-radius: 8px;
             padding: 1rem 1.25rem;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            flex: 1;
+            min-width: 0;
+        }
+
+        .custom-links-box {
+            width: 280px;
+            flex-shrink: 0;
+            background: #fff;
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .links-spacer {
+            flex: 1;
+        }
+
+        .quicklink-item {
+            display: block;
+            padding: 0.75rem;
+            background: #f8f9fa;
+            border-radius: 6px;
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: background 0.15s ease;
+        }
+
+        .quicklink-item:hover {
+            background: #e7f3ff;
+            text-decoration: underline;
         }
 
         .contact-header {
@@ -224,6 +261,17 @@
         .contact-photo:hover {
             transform: scale(1.03);
         }
+
+        @media (max-width: 1100px) {
+            .custom-links-box,
+            .links-spacer {
+                display: none;
+            }
+
+            .contact-layout {
+                display: block;
+            }
+        }
     </style>
 </head>
 <body>
@@ -231,125 +279,142 @@
         <h1><a href="/" style="text-decoration:none;color:inherit;display:inline-flex;align-items:center;gap:0.4rem"><img src="/static/favicon.svg" alt="" style="height:1.5em;width:1.5em;vertical-align:middle">Kontakte</a></h1>
         <a href="/search{% if search %}?search={{ search }}{% endif %}" class="back-link">← Zurück zur Liste</a>
 
-        <div class="contact-card">
-            <div class="contact-header">
-                <div>
-                    <div class="contact-name">{{ contact.full_name or '(Kein Name)' }}</div>
-                    {% if contact.organization or contact.job_title %}
-                    <div class="contact-subtitle">
-                        {% if contact.job_title %}{{ contact.job_title }}{% endif %}
-                        {% if contact.job_title and contact.organization %} bei {% endif %}
-                        {% if contact.organization %}{{ contact.organization }}{% endif %}
+        <div class="contact-layout">
+            <div class="links-spacer"></div>
+
+            <div class="contact-card">
+                <div class="contact-header">
+                    <div>
+                        <div class="contact-name">{{ contact.full_name or '(Kein Name)' }}</div>
+                        {% if contact.organization or contact.job_title %}
+                        <div class="contact-subtitle">
+                            {% if contact.job_title %}{{ contact.job_title }}{% endif %}
+                            {% if contact.job_title and contact.organization %} bei {% endif %}
+                            {% if contact.organization %}{{ contact.organization }}{% endif %}
+                        </div>
+                        {% endif %}
                     </div>
-                    {% endif %}
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:0.3rem">
+                        {% if contact.photo_url %}
+                        <img src="{{ contact.photo_url }}" alt="Foto" class="contact-photo" onerror="this.style.display='none'" onclick="document.getElementById('photo-dialog').showModal()">
+                        {% endif %}
+                        {% if show_all and contact.account %}
+                        <span class="badge">Account: {{ contact.account }}</span>
+                        {% endif %}
+                    </div>
                 </div>
-                <div style="display:flex;flex-direction:column;align-items:center;gap:0.3rem">
-                    {% if contact.photo_url %}
-                    <img src="{{ contact.photo_url }}" alt="Foto" class="contact-photo" onerror="this.style.display='none'" onclick="document.getElementById('photo-dialog').showModal()">
-                    {% endif %}
-                    {% if show_all and contact.account %}
-                    <span class="badge">Account: {{ contact.account }}</span>
-                    {% endif %}
+
+                {% if contact.birthday %}
+                <div class="section">
+                    <div class="birthday-highlight">
+                        🎂 {{ contact.birthday }}
+                    </div>
                 </div>
+                {% endif %}
+
+                {% if contact.emails %}
+                <div class="section">
+                    <div class="section-title">E-Mail</div>
+                    <div class="section-list">
+                        {% for email in contact.emails %}
+                        <div class="section-item">
+                            <span class="section-item-label">{{ email.type }}</span>
+                            <span class="section-item-value"><a href="mailto:{{ email.value }}">{{ email.value }}</a></span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if contact.phones %}
+                <div class="section">
+                    <div class="section-title">Telefon</div>
+                    <div class="section-list">
+                        {% for phone in contact.phones %}
+                        <div class="section-item">
+                            <span class="section-item-label">{{ phone.type }}</span>
+                            <span class="section-item-value"><a href="tel:{{ phone.value }}">{{ phone.value }}</a></span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if contact.addresses %}
+                <div class="section">
+                    <div class="section-title">Adresse</div>
+                    <div class="section-list">
+                        {% for addr in contact.addresses %}
+                        <div class="section-item">
+                            <span class="section-item-label">{{ addr.type }}</span>
+                            <span class="section-item-value">
+                                {{ addr.street }}<br>
+                                {% if addr.zip %}{{ addr.zip }} {% endif %}{{ addr.city }}<br>
+                                {{ addr.region }}{% if addr.region and addr.country %}, {% endif %}{{ addr.country }}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if contact.urls %}
+                <div class="section">
+                    <div class="section-title">Website</div>
+                    <div class="section-list">
+                        {% for url in contact.urls %}
+                        <div class="section-item">
+                            <span class="section-item-label">{{ url.type }}</span>
+                            <span class="section-item-value"><a href="{{ url.value }}" target="_blank">{{ url.value }}</a></span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if contact.social_profiles %}
+                <div class="section">
+                    <div class="section-title">Soziale Profile</div>
+                    <div class="section-list">
+                        {% for sp in contact.social_profiles %}
+                        <div class="section-item">
+                            <span class="section-item-label">{{ sp.type }}{% if sp.username %} ({{ sp.username }}){% endif %}</span>
+                            <span class="section-item-value"><a href="{{ sp.url }}" target="_blank">{{ sp.url }}</a></span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if contact.categories %}
+                <div class="section">
+                    <div class="section-title">Kategorien</div>
+                    <div class="tags">
+                        {% for cat in contact.categories %}
+                        <span class="tag">{{ cat }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if contact.notes %}
+                <div class="section">
+                    <div class="section-title">Notizen</div>
+                    <div class="notes-content">{{ contact.notes }}</div>
+                </div>
+                {% endif %}
             </div>
 
-            {% if contact.birthday %}
-            <div class="section">
-                <div class="birthday-highlight">
-                    🎂 {{ contact.birthday }}
-                </div>
-            </div>
-            {% endif %}
-
-            {% if contact.emails %}
-            <div class="section">
-                <div class="section-title">E-Mail</div>
+            {% if custom_links %}
+            <div class="custom-links-box">
+                <div class="section-title">Schnelllinks</div>
                 <div class="section-list">
-                    {% for email in contact.emails %}
-                    <div class="section-item">
-                        <span class="section-item-label">{{ email.type }}</span>
-                        <span class="section-item-value"><a href="mailto:{{ email.value }}">{{ email.value }}</a></span>
-                    </div>
+                    {% for link in custom_links %}
+                    <a href="{{ link.url | replace('[fullname]', contact.full_name or '') }}" target="_blank" class="quicklink-item">
+                        {{ link.label }}
+                    </a>
                     {% endfor %}
                 </div>
-            </div>
-            {% endif %}
-
-            {% if contact.phones %}
-            <div class="section">
-                <div class="section-title">Telefon</div>
-                <div class="section-list">
-                    {% for phone in contact.phones %}
-                    <div class="section-item">
-                        <span class="section-item-label">{{ phone.type }}</span>
-                        <span class="section-item-value"><a href="tel:{{ phone.value }}">{{ phone.value }}</a></span>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-
-            {% if contact.addresses %}
-            <div class="section">
-                <div class="section-title">Adresse</div>
-                <div class="section-list">
-                    {% for addr in contact.addresses %}
-                    <div class="section-item">
-                        <span class="section-item-label">{{ addr.type }}</span>
-                        <span class="section-item-value">
-                            {{ addr.street }}<br>
-                            {% if addr.zip %}{{ addr.zip }} {% endif %}{{ addr.city }}<br>
-                            {{ addr.region }}{% if addr.region and addr.country %}, {% endif %}{{ addr.country }}
-                        </span>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-
-            {% if contact.urls %}
-            <div class="section">
-                <div class="section-title">Website</div>
-                <div class="section-list">
-                    {% for url in contact.urls %}
-                    <div class="section-item">
-                        <span class="section-item-label">{{ url.type }}</span>
-                        <span class="section-item-value"><a href="{{ url.value }}" target="_blank">{{ url.value }}</a></span>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-
-            {% if contact.social_profiles %}
-            <div class="section">
-                <div class="section-title">Soziale Profile</div>
-                <div class="section-list">
-                    {% for sp in contact.social_profiles %}
-                    <div class="section-item">
-                        <span class="section-item-label">{{ sp.type }}{% if sp.username %} ({{ sp.username }}){% endif %}</span>
-                        <span class="section-item-value"><a href="{{ sp.url }}" target="_blank">{{ sp.url }}</a></span>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-
-            {% if contact.categories %}
-            <div class="section">
-                <div class="section-title">Kategorien</div>
-                <div class="tags">
-                    {% for cat in contact.categories %}
-                    <span class="tag">{{ cat }}</span>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-
-            {% if contact.notes %}
-            <div class="section">
-                <div class="section-title">Notizen</div>
-                <div class="notes-content">{{ contact.notes }}</div>
             </div>
             {% endif %}
         </div>
