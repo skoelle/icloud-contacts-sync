@@ -273,7 +273,7 @@
             {% if upcoming_birthdays %}
             <div class="birthday-list">
                 {% for b in upcoming_birthdays %}
-                <div class="birthday-item">
+                <div class="birthday-item"{% if b.birthday.month == today.month and b.birthday.day == today.day %} style="background: #fff3cd;"{% endif %}>
                     <div class="birthday-name">
                         <a href="/contacts/{{ b.id }}" style="color: #0066cc; text-decoration: none;">{{ b.full_name or '(Kein Name)' }}</a>
                         {% if b.organization %}

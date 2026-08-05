@@ -226,6 +226,7 @@ def web_dashboard(
             "last_sync": last_sync,
             "last_sync_with_changes": last_sync_with_changes,
             "current_year": date.today().year,
+            "today": date.today(),
         },
     )
 
