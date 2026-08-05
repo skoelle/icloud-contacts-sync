@@ -19,6 +19,7 @@ class ContactOut(BaseModel):
     phones: list
     addresses: list
     urls: list
+    social_profiles: list
     categories: list
     updated_at: str
 

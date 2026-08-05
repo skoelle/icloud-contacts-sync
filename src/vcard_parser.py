@@ -69,6 +69,21 @@ def parse_vcard(raw_text: str, account: str, etag: str | None = None) -> dict | 
     urls = [{"type": _type_str(u), "value": u.value}
             for u in getattr(vcard, "url_list", [])]
 
+    social_profiles = []
+    for sp in vcard.contents.get("x-socialprofile", []):
+        params = getattr(sp, "params", {})
+        type_val = params.get("TYPE") or params.get("type") or "other"
+        if isinstance(type_val, list):
+            type_val = type_val[0] if type_val else "other"
+        username = params.get("X-USER") or params.get("x-user") or ""
+        if isinstance(username, list):
+            username = username[0] if username else ""
+        social_profiles.append({
+            "type": type_val,
+            "username": username,
+            "url": sp.value if sp.value else "",
+        })
+
     categories = [c.strip() for c in vcard.categories.value] if hasattr(vcard, "categories") else []
 
     birthday = str(vcard.bday.value)[:10] if hasattr(vcard, "bday") else None
@@ -100,7 +115,7 @@ def parse_vcard(raw_text: str, account: str, etag: str | None = None) -> dict | 
         "phones": json.dumps(phones, ensure_ascii=False),
         "addresses": json.dumps(addresses, ensure_ascii=False),
         "urls": json.dumps(urls, ensure_ascii=False),
-        "social_profiles": json.dumps([], ensure_ascii=False),
+        "social_profiles": json.dumps(social_profiles, ensure_ascii=False),
         "related_names": json.dumps([], ensure_ascii=False),
         "categories": json.dumps(categories, ensure_ascii=False),
         "raw_vcard": raw_text,

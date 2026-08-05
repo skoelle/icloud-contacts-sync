@@ -277,6 +277,20 @@
             </div>
             {% endif %}
 
+            {% if contact.social_profiles %}
+            <div class="section">
+                <div class="section-title">Soziale Profile</div>
+                <div class="section-list">
+                    {% for sp in contact.social_profiles %}
+                    <div class="section-item">
+                        <span class="section-item-label">{{ sp.type }}{% if sp.username %} ({{ sp.username }}){% endif %}</span>
+                        <span class="section-item-value"><a href="{{ sp.url }}" target="_blank">{{ sp.url }}</a></span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
             {% if contact.categories %}
             <div class="section">
                 <div class="section-title">Kategorien</div>
