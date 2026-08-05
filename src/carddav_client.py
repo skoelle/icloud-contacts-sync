@@ -48,6 +48,9 @@ class CardDAVClient:
         )
         if resp.status_code == 403 and "valid-sync-token" in resp.text:
             raise SyncTokenInvalid("sync-token vom Server abgelehnt")
+        if resp.status_code == 503:
+            retry_after = resp.headers.get("Retry-After")
+            logger.warning("503 Service Unavailable — Retry-After: %s", retry_after or "nicht angegeben")
         resp.raise_for_status()
         return ET.fromstring(resp.content)
 
