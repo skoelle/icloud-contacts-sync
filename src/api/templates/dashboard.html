@@ -174,21 +174,57 @@
             font-size: 0.875rem;
             font-style: italic;
         }
+
+        .search-form {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .search-form input[type="text"] {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+            background: #fff;
+        }
+
+        .search-form input[type="text"]:focus {
+            outline: none;
+            border-color: #0066cc;
+        }
+
+        .search-form button {
+            padding: 0.75rem 1.5rem;
+            background: #0066cc;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .search-form button:hover {
+            background: #0055aa;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>Dashboard</h1>
-            <div class="nav-links">
-                <a href="/search">Suche</a>
-            </div>
+            <h1><a href="/" style="text-decoration:none;color:inherit;display:inline-flex;align-items:center;gap:0.4rem"><img src="/static/favicon.svg" alt="" style="height:1.5em;width:1.5em;vertical-align:middle">Kontakte</a></h1>
         </div>
 
         <div class="meta">
             Angemeldet als <strong>{{ current_user }}</strong>
             {% if is_admin %}(Admin, sieht alle Accounts){% else %}(Account: {{ account_name }}){% endif %}
         </div>
+
+        <form class="search-form" method="get" action="/search">
+            <input type="text" name="search" placeholder="Suche nach Name oder Organisation...">
+            <button type="submit">Suchen</button>
+        </form>
 
         <div class="dashboard-grid">
             <div class="box">
