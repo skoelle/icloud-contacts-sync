@@ -86,6 +86,19 @@ def parse_vcard(raw_text: str, account: str, etag: str | None = None) -> dict | 
 
     categories = [c.strip() for c in vcard.categories.value] if hasattr(vcard, "categories") else []
 
+    photo_url = None
+    photo_base64 = None
+    if hasattr(vcard, "photo"):
+        photo_obj = vcard.photo
+        params = getattr(photo_obj, "params", {})
+        encoding = params.get("ENCODING") or params.get("encoding")
+        value = photo_obj.value
+        if isinstance(value, str) and value.startswith("http"):
+            photo_url = value
+        elif encoding and str(encoding).upper() == "B" and isinstance(value, bytes):
+            import base64
+            photo_base64 = base64.b64encode(value).decode("ascii")
+
     birthday = str(vcard.bday.value)[:10] if hasattr(vcard, "bday") else None
 
     org = None
@@ -110,7 +123,8 @@ def parse_vcard(raw_text: str, account: str, etag: str | None = None) -> dict | 
         "birthday": birthday,
         "anniversary": None,
         "notes": _scalar(_get(vcard, "note")),
-        "photo_base64": None,
+        "photo_base64": photo_base64,
+        "photo_url": photo_url,
         "emails": json.dumps(emails, ensure_ascii=False),
         "phones": json.dumps(phones, ensure_ascii=False),
         "addresses": json.dumps(addresses, ensure_ascii=False),

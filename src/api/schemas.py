@@ -15,6 +15,7 @@ class ContactOut(BaseModel):
     job_title: str | None
     birthday: date | None
     notes: str | None
+    photo_url: str | None
     emails: list
     phones: list
     addresses: list

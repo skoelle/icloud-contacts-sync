@@ -65,6 +65,14 @@
             border-bottom: 1px solid #eee;
         }
 
+        .contact-photo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
         .contact-name {
             font-size: 1.5rem;
             font-weight: 600;
@@ -206,6 +214,9 @@
                 </div>
                 {% if is_admin and contact.account %}
                 <span class="badge badge-account">{{ contact.account }}</span>
+                {% endif %}
+                {% if contact.photo_url %}
+                <img src="{{ contact.photo_url }}" alt="Foto" class="contact-photo" onerror="this.style.display='none'">
                 {% endif %}
             </div>
 

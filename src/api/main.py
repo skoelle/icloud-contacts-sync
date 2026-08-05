@@ -76,7 +76,7 @@ def list_contacts(
 
             cur.execute(
                 f"""SELECT id, account, uid, full_name, given_name, family_name, organization,
-                           job_title, birthday, notes, emails, phones, addresses, urls, social_profiles, categories, updated_at
+                           job_title, birthday, notes, photo_url, emails, phones, addresses, urls, social_profiles, categories, updated_at
                     FROM contacts {where_clause}{search_clause}
                     ORDER BY full_name
                     LIMIT %s OFFSET %s""",
@@ -98,7 +98,7 @@ def get_contact(contact_id: int, current_user: str = Depends(get_current_user)):
         with conn.cursor() as cur:
             cur.execute(
                 f"""SELECT id, account, uid, full_name, given_name, family_name, organization,
-                           job_title, birthday, notes, emails, phones, addresses, urls, social_profiles, categories, updated_at
+                           job_title, birthday, notes, photo_url, emails, phones, addresses, urls, social_profiles, categories, updated_at
                     FROM contacts {where_clause} {id_clause}""",
                 params + [contact_id],
             )
@@ -121,7 +121,7 @@ def birthdays_today(current_user: str = Depends(get_current_user)):
         with conn.cursor() as cur:
             cur.execute(
                 f"""SELECT id, account, uid, full_name, given_name, family_name, organization,
-                           job_title, birthday, notes, emails, phones, addresses, urls, social_profiles, categories, updated_at
+                           job_title, birthday, notes, photo_url, emails, phones, addresses, urls, social_profiles, categories, updated_at
                     FROM contacts {where_clause} {month_day_clause}
                     ORDER BY full_name""",
                 params + [today.month, today.day],
@@ -293,7 +293,7 @@ def web_contact(
         with conn.cursor() as cur:
             cur.execute(
                 f"""SELECT id, account, uid, full_name, given_name, family_name, organization,
-                           job_title, birthday, notes, emails, phones, addresses, urls, social_profiles, categories, updated_at
+                           job_title, birthday, notes, photo_url, emails, phones, addresses, urls, social_profiles, categories, updated_at
                     FROM contacts {where_clause} {id_clause}""",
                 params + [contact_id],
             )

@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS contacts (
     anniversary         DATE NULL,
     notes               TEXT NULL,
     photo_base64        LONGTEXT NULL,
+    photo_url           VARCHAR(2048) NULL,
     emails              JSON NULL,
     phones              JSON NULL,
     addresses           JSON NULL,
