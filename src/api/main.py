@@ -186,3 +186,40 @@ def web_index(
             "search": search or "",
         },
     )
+
+
+@app.get("/contacts/{contact_id}", response_class=HTMLResponse)
+def web_contact(
+    request: Request,
+    contact_id: int,
+    current_user: str = Depends(get_current_user),
+):
+    account_name, is_admin = resolve_account_for_user(current_user)
+
+    with db.get_connection() as conn:
+        where_clause, params = _account_filter_clause(account_name)
+        id_clause = "AND id = %s" if where_clause else "WHERE id = %s"
+        with conn.cursor() as cur:
+            cur.execute(
+                f"""SELECT id, account, uid, full_name, given_name, family_name, organization,
+                           job_title, birthday, notes, emails, phones, addresses, urls, categories, updated_at
+                    FROM contacts {where_clause} {id_clause}""",
+                params + [contact_id],
+            )
+            row = cur.fetchone()
+
+    if not row:
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/", status_code=303)
+
+    contact = _row_to_contact_out(row)
+
+    return templates.TemplateResponse(
+        "contact.html",
+        {
+            "request": request,
+            "current_user": current_user,
+            "is_admin": is_admin,
+            "contact": contact,
+        },
+    )

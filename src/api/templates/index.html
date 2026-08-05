@@ -90,10 +90,19 @@
         }
 
         .contact-card {
+            display: block;
             background: #fff;
             border-radius: 8px;
             padding: 1rem 1.25rem;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            text-decoration: none;
+            color: inherit;
+            transition: box-shadow 0.15s, transform 0.15s;
+        }
+
+        .contact-card:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            transform: translateY(-1px);
         }
 
         .contact-header {
@@ -172,7 +181,7 @@
         <div class="contacts-list">
             {% if contacts %}
                 {% for c in contacts %}
-                <div class="contact-card">
+                <a href="/contacts/{{ c.id }}" class="contact-card">
                     <div class="contact-header">
                         <div>
                             <div class="contact-name">{{ c.full_name or '(Kein Name)' }}</div>
@@ -187,7 +196,7 @@
                         <span class="badge badge-account">{{ c.account }}</span>
                         {% endif %}
                     </div>
-                </div>
+                </a>
                 {% endfor %}
             {% else %}
                 <div class="no-contacts">
