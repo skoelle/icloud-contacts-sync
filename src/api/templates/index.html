@@ -143,16 +143,13 @@
             display: inline-block;
             padding: 0.1rem 0.4rem;
             border-radius: 3px;
-            font-size: 0.65rem;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            font-size: 0.6rem;
+            font-weight: 400;
+            text-transform: none;
+            letter-spacing: 0;
             white-space: nowrap;
-        }
-
-        .badge-account {
-            background: #d1ecf1;
-            color: #0c5460;
+            color: #888;
+            background: #f0f0f0;
         }
 
         .contact-photo {
@@ -201,9 +198,10 @@
                             <div class="contact-organization">{{ c.organization }}</div>
                             {% endif %}
                             {% if c.birthday %}
-                            <div class="contact-birthday">{% if show_all and c.account %}<span class="badge badge-account">{{ c.account }}</span> {% endif %}{{ c.birthday }}</div>
-                            {% elif show_all and c.account %}
-                            <div class="contact-birthday"><span class="badge badge-account">{{ c.account }}</span></div>
+                            <div class="contact-birthday">{{ c.birthday }}</div>
+                            {% endif %}
+                            {% if show_all and c.account %}
+                            <div class="contact-birthday"><span class="badge">Account: {{ c.account }}</span></div>
                             {% endif %}
                         </div>
                         {% if c.photo_url %}

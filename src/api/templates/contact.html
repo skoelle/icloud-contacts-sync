@@ -89,16 +89,13 @@
             display: inline-block;
             padding: 0.1rem 0.4rem;
             border-radius: 3px;
-            font-size: 0.65rem;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            font-size: 0.6rem;
+            font-weight: 400;
+            text-transform: none;
+            letter-spacing: 0;
             white-space: nowrap;
-        }
-
-        .badge-account {
-            background: #d1ecf1;
-            color: #0c5460;
+            color: #888;
+            background: #f0f0f0;
             margin-top: 0.35rem;
         }
 
@@ -213,7 +210,7 @@
                     </div>
                     {% endif %}
                     {% if show_all and contact.account %}
-                    <span class="badge badge-account">{{ contact.account }}</span>
+                    <span class="badge">Account: {{ contact.account }}</span>
                     {% endif %}
                 </div>
                 {% if contact.photo_url %}
