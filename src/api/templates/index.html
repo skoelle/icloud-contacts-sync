@@ -139,20 +139,12 @@
             content: "\1F382 ";
         }
 
-        .badge {
-            display: inline-block;
-            padding: 0.2rem 0.6rem;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            white-space: nowrap;
-        }
-
-        .badge-account {
-            background: #d1ecf1;
-            color: #0c5460;
+        .contact-photo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
         }
 
         .no-contacts {
@@ -196,8 +188,8 @@
                             <div class="contact-birthday">{{ c.birthday }}</div>
                             {% endif %}
                         </div>
-                        {% if is_admin and c.account %}
-                        <span class="badge badge-account">{{ c.account }}</span>
+                        {% if c.photo_url %}
+                        <img src="{{ c.photo_url }}" alt="" class="contact-photo" onerror="this.style.display='none'">
                         {% endif %}
                     </div>
                 </a>

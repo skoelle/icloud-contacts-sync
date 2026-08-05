@@ -253,7 +253,7 @@ def web_search(
         with conn.cursor() as cur:
             cur.execute(
                 f"""SELECT id, full_name, given_name, middle_name, family_name,
-                           prefix, suffix, organization, birthday, account
+                           prefix, suffix, organization, birthday, account, photo_url
                     FROM contacts {where_clause}{search_clause}
                     ORDER BY full_name
                     LIMIT 200""",

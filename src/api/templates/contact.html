@@ -66,8 +66,8 @@
         }
 
         .contact-photo {
-            width: 80px;
-            height: 80px;
+            width: 160px;
+            height: 160px;
             border-radius: 50%;
             object-fit: cover;
             flex-shrink: 0;
@@ -99,6 +99,7 @@
         .badge-account {
             background: #d1ecf1;
             color: #0c5460;
+            margin-top: 0.35rem;
         }
 
         .section {
@@ -211,10 +212,10 @@
                         {% if contact.organization %}{{ contact.organization }}{% endif %}
                     </div>
                     {% endif %}
+                    {% if is_admin and contact.account %}
+                    <span class="badge badge-account">{{ contact.account }}</span>
+                    {% endif %}
                 </div>
-                {% if is_admin and contact.account %}
-                <span class="badge badge-account">{{ contact.account }}</span>
-                {% endif %}
                 {% if contact.photo_url %}
                 <img src="{{ contact.photo_url }}" alt="Foto" class="contact-photo" onerror="this.style.display='none'">
                 {% endif %}
