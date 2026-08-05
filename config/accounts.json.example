@@ -7,7 +7,9 @@
       "authelia_user": "mmustermann",
       "custom_links": [
         {"label": "Google Suche", "url": "https://www.google.com/search?q=[fullname]"},
-        {"label": "LinkedIn", "url": "https://www.linkedin.com/search/results/all/?keywords=[fullname]"}
+        {"label": "LinkedIn", "url": "https://www.linkedin.com/search/results/all/?keywords=[fullname]"},
+        {"label": "Google Maps Home", "url": "https://www.google.com/maps?q=[homecity]"},
+        {"label": "Google Maps Work", "url": "https://www.google.com/maps?q=[workcity]"}
       ]
     },
     {

@@ -356,6 +356,18 @@ def web_contact(
 
     contact = _row_to_contact_out(row)
 
+    homecity = ""
+    workcity = ""
+    for addr in contact.get("addresses", []):
+        city = (addr.get("city") or "").strip()
+        if not city:
+            continue
+        addr_type = (addr.get("type") or "").lower()
+        if addr_type == "home" and not homecity:
+            homecity = city
+        elif addr_type == "work" and not workcity:
+            workcity = city
+
     custom_links = []
     contact_account = contact.get("account")
     if contact_account:
@@ -364,6 +376,18 @@ def web_contact(
             if acc.name == contact_account:
                 custom_links = acc.custom_links
                 break
+
+    resolved_links = []
+    for link in custom_links:
+        url = link["url"]
+        if "[homecity]" in url and not homecity:
+            continue
+        if "[workcity]" in url and not workcity:
+            continue
+        url = url.replace("[fullname]", quote_plus(contact.get("full_name") or ""))
+        url = url.replace("[homecity]", quote_plus(homecity))
+        url = url.replace("[workcity]", quote_plus(workcity))
+        resolved_links.append({"label": link["label"], "url": url})
 
     return templates.TemplateResponse(
         "contact.html",
@@ -374,6 +398,6 @@ def web_contact(
             "show_all": show_all,
             "contact": contact,
             "search": search or "",
-            "custom_links": custom_links,
+            "custom_links": resolved_links,
         },
     )
