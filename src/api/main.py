@@ -11,6 +11,7 @@ from datetime import date
 
 from fastapi import FastAPI, Depends, Query, Request
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from config import Config
@@ -22,6 +23,7 @@ logging.basicConfig(level=Config.LOG_LEVEL, format="%(asctime)s [%(levelname)s] 
 logger = logging.getLogger("api")
 
 app = FastAPI(title="iCloud Contacts Sync – Interne API", version="1.0.0")
+app.mount("/static", StaticFiles(directory="api/static"), name="static")
 templates = Jinja2Templates(directory="api/templates")
 
 
