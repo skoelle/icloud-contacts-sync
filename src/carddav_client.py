@@ -89,8 +89,10 @@ class CardDAVClient:
 
     def sync_collection(self, collection_url: str, sync_token: str | None):
         """
-        Führt REPORT sync-collection aus. Gibt (changed_or_new_vcards, deleted_hrefs, new_sync_token) zurück.
-        changed_or_new_vcards: list[str] roher vCard-Text
+        Führt REPORT sync-collection aus.
+        Gibt (changed_vcards, etags, deleted_hrefs, new_sync_token) zurück.
+        changed_vcards: list[str] roher vCard-Text
+        etags: list[str|None] ETag pro vCard (None wenn nicht vorhanden)
         deleted_hrefs: list[str] Hrefs von gelöschten Kontakten (status 404)
         """
         token_element = f"<d:sync-token>{sync_token}</d:sync-token>" if sync_token else "<d:sync-token/>"
@@ -102,7 +104,7 @@ class CardDAVClient:
         </d:sync-collection>"""
         root = self._request("REPORT", collection_url, body, depth="1")
 
-        vcards, deleted_hrefs = [], []
+        vcards, etags, deleted_hrefs = [], [], []
         for response in root.findall("d:response", NS):
             status_el = response.find(".//d:status", NS)
             status_text = status_el.text if status_el is not None else ""
@@ -114,28 +116,40 @@ class CardDAVClient:
                     deleted_hrefs.append(href)
                 continue
 
+            if not any(s in status_text for s in ("200", "207")):
+                logger.warning("Unerwarteter Status %s für %s, überspringe", status_text, href)
+                continue
+
+            etag_el = response.find("d:getetag", NS)
+            etag = etag_el.text if etag_el is not None else None
+
             data = response.find(".//card:address-data", NS)
             if data is not None and data.text:
                 vcards.append(data.text)
+                etags.append(etag)
 
         new_token_el = root.find("d:sync-token", NS)
         new_token = new_token_el.text if new_token_el is not None else None
-        return vcards, deleted_hrefs, new_token
+        return vcards, etags, deleted_hrefs, new_token
 
-    def fetch_all_vcards(self, collection_url: str) -> list[str]:
-        """Fallback für den allerersten, vollen Abruf über addressbook-query."""
+    def fetch_all_vcards(self, collection_url: str) -> tuple[list[str], list[str | None]]:
+        """Fallback für den allerersten, vollen Abruf über addressbook-query.
+        Gibt (vcards, etags) zurück."""
         body = """<?xml version="1.0" encoding="utf-8" ?>
         <card:addressbook-query xmlns:d="DAV:" xmlns:card="urn:ietf:params:xml:ns:carddav">
           <d:prop><d:getetag/><card:address-data/></d:prop>
           <card:filter/>
         </card:addressbook-query>"""
         root = self._request("REPORT", collection_url, body, depth="1")
-        vcards = []
+        vcards, etags = [], []
         for response in root.findall("d:response", NS):
+            etag_el = response.find("d:getetag", NS)
+            etag = etag_el.text if etag_el is not None else None
             data = response.find(".//card:address-data", NS)
             if data is not None and data.text:
                 vcards.append(data.text)
-        return vcards
+                etags.append(etag)
+        return vcards, etags
 
     def discover_collection(self) -> str:
         principal = self.discover_principal()

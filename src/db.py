@@ -5,7 +5,7 @@ import logging
 import os
 import uuid
 from contextlib import contextmanager
-from datetime import date
+from datetime import date, datetime
 
 import pymysql
 from pymysql.cursors import DictCursor
@@ -95,9 +95,11 @@ def finish_sync_run(conn, run_id: str, status: str, upserted: int = None, delete
 def upsert_contacts(conn, contacts: list[dict], run_id: str):
     if not contacts:
         return
+    now = datetime.now()
     with conn.cursor() as cur:
         for c in contacts:
             c["sync_run_id"] = run_id
+            c["last_synced_at"] = now
             c = _sanitize_contact(c)
             cols = list(c.keys())
             placeholders = ", ".join(["%s"] * len(cols))

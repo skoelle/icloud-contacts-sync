@@ -9,10 +9,10 @@ vollständiger Re-Sync."""
 import logging
 import sys
 
-from config import Config
-from carddav_client import CardDAVClient, ICLOUD_BASE_URL, SyncTokenInvalid
-from vcard_parser import parse_vcard
 import db
+from carddav_client import ICLOUD_BASE_URL, CardDAVClient, SyncTokenInvalid
+from config import Config
+from vcard_parser import parse_vcard
 
 logging.basicConfig(level=Config.LOG_LEVEL, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("sync")
@@ -29,35 +29,53 @@ def sync_account(conn, account, href_to_uid_cache: dict):
     try:
         if not stored_token:
             logger.info("[%s] Kein sync-token vorhanden, führe initialen Full-Sync aus", account.name)
-            raw_vcards = client.fetch_all_vcards(collection_url)
-            contacts = [c for c in (parse_vcard(v, account.name) for v in raw_vcards) if c]
+            raw_vcards, raw_etags = client.fetch_all_vcards(collection_url)
+            contacts = []
+            for v, etag in zip(raw_vcards, raw_etags):
+                c = parse_vcard(v, account.name, etag=etag)
+                if c:
+                    contacts.append(c)
+                else:
+                    logger.warning("[%s] vCard konnte nicht geparst werden, überspringe", account.name)
             db.replace_all_contacts_for_account(conn, account.name, contacts, run_id)
-            _, _, new_token = client.sync_collection(collection_url, None)
-            if new_token:
-                db.save_sync_token(conn, account.name, new_token)
             db.finish_sync_run(conn, run_id, "success", upserted=len(contacts), deleted=0)
             logger.info("[%s] Initialer Sync abgeschlossen: %d Kontakte", account.name, len(contacts))
             return
 
         try:
-            changed_vcards, deleted_hrefs, new_token = client.sync_collection(collection_url, stored_token)
+            changed_vcards, etags, deleted_hrefs, new_token = client.sync_collection(collection_url, stored_token)
         except SyncTokenInvalid:
             logger.warning("[%s] sync-token vom Server abgelehnt, führe vollen Re-Sync aus", account.name)
             db.clear_sync_token(conn, account.name)
-            raw_vcards = client.fetch_all_vcards(collection_url)
-            contacts = [c for c in (parse_vcard(v, account.name) for v in raw_vcards) if c]
+            raw_vcards, raw_etags = client.fetch_all_vcards(collection_url)
+            contacts = []
+            for v, etag in zip(raw_vcards, raw_etags):
+                c = parse_vcard(v, account.name, etag=etag)
+                if c:
+                    contacts.append(c)
+                else:
+                    logger.warning("[%s] vCard konnte nicht geparst werden, überspringe", account.name)
             db.replace_all_contacts_for_account(conn, account.name, contacts, run_id)
-            _, _, new_token = client.sync_collection(collection_url, None)
-            if new_token:
-                db.save_sync_token(conn, account.name, new_token)
             db.finish_sync_run(conn, run_id, "success", upserted=len(contacts), deleted=0)
             logger.info("[%s] Re-Sync abgeschlossen: %d Kontakte", account.name, len(contacts))
             return
 
-        contacts = [c for c in (parse_vcard(v, account.name) for v in changed_vcards) if c]
+        contacts = []
+        for v, etag in zip(changed_vcards, etags):
+            c = parse_vcard(v, account.name, etag=etag)
+            if c:
+                contacts.append(c)
+            else:
+                logger.warning("[%s] vCard konnte nicht geparst werden, überspringe", account.name)
         db.upsert_contacts(conn, contacts, run_id)
 
-        deleted_uids = [href.rstrip("/").rsplit("/", 1)[-1].replace(".vcf", "") for href in deleted_hrefs]
+        deleted_uids = []
+        for href in deleted_hrefs:
+            uid = href.rstrip("/").rsplit("/", 1)[-1].replace(".vcf", "")
+            if uid:
+                deleted_uids.append(uid)
+            else:
+                logger.warning("[%s] Konnte UID nicht aus href extrahieren: %s", account.name, href)
         db.delete_contacts_by_href_uids(conn, account.name, deleted_uids)
 
         if new_token:

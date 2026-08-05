@@ -33,7 +33,7 @@ def _type_str(obj) -> str:
     return "other"
 
 
-def parse_vcard(raw_text: str, account: str) -> dict | None:
+def parse_vcard(raw_text: str, account: str, etag: str | None = None) -> dict | None:
     try:
         vcard = vobject.readOne(raw_text)
     except Exception as exc:
@@ -81,7 +81,7 @@ def parse_vcard(raw_text: str, account: str) -> dict | None:
     return {
         "account": account,
         "uid": uid,
-        "etag": None,
+        "etag": etag,
         "full_name": _scalar(_get(vcard, "fn")),
         "given_name": given_name,
         "family_name": family_name,
