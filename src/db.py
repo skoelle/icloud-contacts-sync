@@ -165,10 +165,13 @@ def search_contacts_without_photo(conn, account: str | None) -> list[dict]:
                 {op} given_name IS NOT NULL AND given_name != ''
                 AND family_name IS NOT NULL AND family_name != ''
                 AND photo_base64 IS NULL AND photo_url IS NULL
-                AND JSON_SEARCH(addresses, 'one', %s, NULL, '$[*].city') IS NOT NULL
+                AND EXISTS (
+                    SELECT 1 FROM JSON_TABLE(addresses, '$[*]' COLUMNS (city VARCHAR(255) PATH '$.city')) AS addr
+                    WHERE addr.city IS NOT NULL AND addr.city != ''
+                )
                 AND family_name != 'X'
                 ORDER BY full_name""",
-            params + ['%'],
+            params,
         )
         return cur.fetchall()
 
@@ -184,10 +187,13 @@ def search_contacts_without_city(conn, account: str | None) -> list[dict]:
                 {op} given_name IS NOT NULL AND given_name != ''
                 AND family_name IS NOT NULL AND family_name != ''
                 AND (JSON_LENGTH(phones) > 0 OR JSON_LENGTH(emails) > 0)
-                AND (JSON_LENGTH(addresses) = 0 OR JSON_SEARCH(addresses, 'one', %s, NULL, '$[*].city') IS NULL)
+                AND NOT EXISTS (
+                    SELECT 1 FROM JSON_TABLE(addresses, '$[*]' COLUMNS (city VARCHAR(255) PATH '$.city')) AS addr
+                    WHERE addr.city IS NOT NULL AND addr.city != ''
+                )
                 AND family_name != 'X'
                 ORDER BY full_name""",
-            params + ['%'],
+            params,
         )
         return cur.fetchall()
 
