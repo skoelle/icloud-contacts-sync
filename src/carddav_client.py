@@ -115,14 +115,18 @@ class CardDAVClient:
         </d:sync-collection>"""
         root = self._request("REPORT", collection_url, body, depth="1")
 
+        responses = root.findall("d:response", NS)
+        logger.debug("sync-collection: %d response-Elemente erhalten", len(responses))
+
         vcards, etags, deleted_hrefs = [], [], []
-        for response in root.findall("d:response", NS):
+        for response in responses:
             status_el = response.find(".//d:status", NS)
             status_text = status_el.text if status_el is not None else ""
             href_el = response.find("d:href", NS)
             href = href_el.text if href_el is not None else None
 
             if "404" in status_text:
+                logger.debug("  DELETE href=%s status=%s", href, status_text)
                 if href:
                     deleted_hrefs.append(href)
                 continue
@@ -131,12 +135,15 @@ class CardDAVClient:
             etag = etag_el.text if etag_el is not None else None
 
             data = response.find(".//card:address-data", NS)
-            if data is not None and data.text:
+            has_data = data is not None and bool(data.text)
+            logger.debug("  UPSERT href=%s etag=%s status='%s' has_data=%s", href, etag, status_text, has_data)
+            if has_data:
                 vcards.append(data.text)
                 etags.append(etag)
 
         new_token_el = root.find("d:sync-token", NS)
         new_token = new_token_el.text if new_token_el is not None else None
+        logger.debug("sync-collection Ergebnis: %d vcards, %d deleted, new_token=%s", len(vcards), len(deleted_hrefs), new_token[:20] if new_token else None)
         return vcards, etags, deleted_hrefs, new_token
 
     def fetch_all_vcards(self, collection_url: str) -> tuple[list[str], list[str | None]]:
