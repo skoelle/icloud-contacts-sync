@@ -34,6 +34,8 @@ def _row_to_contact_out(row: dict) -> dict:
     for field in ["emails", "phones", "addresses", "urls", "categories"]:
         raw = row.get(field)
         row[field] = json.loads(raw) if raw else []
+    if not row.get("full_name"):
+        row["full_name"] = db._build_full_name(row)
     row["updated_at"] = str(row["updated_at"])
     return row
 
@@ -64,9 +66,9 @@ def list_contacts(
         search_clause = ""
         if q:
             search_op = "AND" if where_clause else "WHERE"
-            search_clause = f" {search_op} (full_name LIKE %s OR organization LIKE %s OR emails LIKE %s)"
+            search_clause = f" {search_op} (full_name LIKE %s OR given_name LIKE %s OR family_name LIKE %s OR organization LIKE %s OR emails LIKE %s)"
             like = f"%{q}%"
-            params.extend([like, like, like])
+            params.extend([like, like, like, like, like])
 
         with conn.cursor() as cur:
             cur.execute(f"SELECT COUNT(*) AS total FROM contacts {where_clause}{search_clause}", params)
@@ -225,19 +227,24 @@ def web_search(
         search_clause = ""
         if search:
             search_op = "AND" if where_clause else "WHERE"
-            search_clause = f" {search_op} (full_name LIKE %s OR organization LIKE %s)"
+            search_clause = f" {search_op} (full_name LIKE %s OR given_name LIKE %s OR family_name LIKE %s OR organization LIKE %s)"
             like = f"%{search}%"
-            params.extend([like, like])
+            params.extend([like, like, like, like])
 
         with conn.cursor() as cur:
             cur.execute(
-                f"""SELECT id, full_name, organization, birthday, account
+                f"""SELECT id, full_name, given_name, middle_name, family_name,
+                           prefix, suffix, organization, birthday, account
                     FROM contacts {where_clause}{search_clause}
                     ORDER BY full_name
                     LIMIT 200""",
                 params,
             )
             rows = cur.fetchall()
+
+    for row in rows:
+        if not row.get("full_name"):
+            row["full_name"] = db._build_full_name(row)
 
     return templates.TemplateResponse(
         "index.html",

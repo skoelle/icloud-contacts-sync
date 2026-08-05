@@ -122,6 +122,17 @@ def delete_contacts_by_href_uids(conn, account: str, uids: list[str]):
     conn.commit()
 
 
+def _build_full_name(row: dict) -> str | None:
+    parts = [
+        row.get("prefix"),
+        row.get("given_name"),
+        row.get("middle_name"),
+        row.get("family_name"),
+        row.get("suffix"),
+    ]
+    return " ".join(p for p in parts if p) or None
+
+
 def _account_filter_clause(account_name: str | None) -> tuple[str, list]:
     if account_name is None:
         return "", []
@@ -140,7 +151,8 @@ def get_upcoming_birthdays(conn, account: str | None, days: int = 7) -> list[dic
     today = date.today()
     with conn.cursor() as cur:
         cur.execute(
-            f"""SELECT id, full_name, organization, birthday, account
+            f"""SELECT id, full_name, given_name, middle_name, family_name,
+                       prefix, suffix, organization, birthday, account
                 FROM contacts {where_clause}
                 {"AND" if where_clause else "WHERE"} birthday IS NOT NULL
                 AND (
@@ -155,7 +167,11 @@ def get_upcoming_birthdays(conn, account: str | None, days: int = 7) -> list[dic
             params + [today.month, today.month, today.day,
                        today.month, today.month, today.day, days],
         )
-        return cur.fetchall()
+        rows = cur.fetchall()
+    for row in rows:
+        if not row.get("full_name"):
+            row["full_name"] = _build_full_name(row)
+    return rows
 
 
 def _sanitize_contact(c: dict) -> dict:
