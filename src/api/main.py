@@ -11,6 +11,7 @@ import json
 import logging
 import secrets
 from datetime import date
+from urllib.parse import quote_plus
 
 from fastapi import Depends, FastAPI, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -30,6 +31,7 @@ app = FastAPI(title="iCloud Contacts Sync – Interne API", version="1.0.0")
 app.add_middleware(SessionMiddleware, secret_key=secrets.token_hex(32), session_cookie="ics_session")
 app.mount("/static", StaticFiles(directory="api/static"), name="static")
 templates = Jinja2Templates(directory="api/templates")
+templates.env.filters["urlquote"] = lambda s: quote_plus(s or "")
 
 
 def _row_to_contact_out(row: dict) -> dict:
