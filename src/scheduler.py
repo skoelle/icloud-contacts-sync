@@ -100,7 +100,7 @@ def main():
     except Exception:
         logger.exception("Schema-Init fehlgeschlagen — Sync wird trotzdem gestartet")
 
-    logger.info("Fuehre initialen Sync aus...")
+    logger.info("Starte ersten Sync-Lauf...")
     run_sync()
 
     last_sync = datetime.now()

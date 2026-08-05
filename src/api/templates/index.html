@@ -200,13 +200,15 @@
                             {% if c.birthday %}
                             <div class="contact-birthday">{{ c.birthday }}</div>
                             {% endif %}
+                        </div>
+                        <div style="display:flex;flex-direction:column;align-items:center;gap:0.3rem">
+                            {% if c.photo_url %}
+                            <img src="{{ c.photo_url }}" alt="" class="contact-photo" onerror="this.style.display='none'">
+                            {% endif %}
                             {% if show_all and c.account %}
-                            <div class="contact-birthday"><span class="badge">Account: {{ c.account }}</span></div>
+                            <span class="badge">Account: {{ c.account }}</span>
                             {% endif %}
                         </div>
-                        {% if c.photo_url %}
-                        <img src="{{ c.photo_url }}" alt="" class="contact-photo" onerror="this.style.display='none'">
-                        {% endif %}
                     </div>
                 </a>
                 {% endfor %}

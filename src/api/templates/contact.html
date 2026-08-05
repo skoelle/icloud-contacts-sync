@@ -96,7 +96,6 @@
             white-space: nowrap;
             color: #888;
             background: #f0f0f0;
-            margin-top: 0.35rem;
         }
 
         .section {
@@ -209,13 +208,15 @@
                         {% if contact.organization %}{{ contact.organization }}{% endif %}
                     </div>
                     {% endif %}
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:0.3rem">
+                    {% if contact.photo_url %}
+                    <img src="{{ contact.photo_url }}" alt="Foto" class="contact-photo" onerror="this.style.display='none'">
+                    {% endif %}
                     {% if show_all and contact.account %}
                     <span class="badge">Account: {{ contact.account }}</span>
                     {% endif %}
                 </div>
-                {% if contact.photo_url %}
-                <img src="{{ contact.photo_url }}" alt="Foto" class="contact-photo" onerror="this.style.display='none'">
-                {% endif %}
             </div>
 
             {% if contact.birthday %}
