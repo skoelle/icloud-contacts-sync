@@ -213,6 +213,8 @@ def web_dashboard(
 
     if last_sync_with_changes:
         last_sync_with_changes["started_at"] = str(last_sync_with_changes["started_at"])
+        if last_sync and last_sync["started_at"] == last_sync_with_changes["started_at"]:
+            last_sync_with_changes = None
 
     return templates.TemplateResponse(
         "dashboard.html",
