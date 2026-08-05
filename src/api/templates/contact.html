@@ -212,7 +212,7 @@
                         {% if contact.organization %}{{ contact.organization }}{% endif %}
                     </div>
                     {% endif %}
-                    {% if is_admin and contact.account %}
+                    {% if show_all and contact.account %}
                     <span class="badge badge-account">{{ contact.account }}</span>
                     {% endif %}
                 </div>

@@ -9,12 +9,14 @@ vorgeschalteten Reverse-Proxy mit Authelia, der den eingeloggten
 Benutzernamen im Remote-User-Header mitschickt."""
 import json
 import logging
+import secrets
 from datetime import date
 
 from fastapi import Depends, FastAPI, Query, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.middleware.sessions import SessionMiddleware
 
 import db
 from api.auth import get_current_user, resolve_account_for_user
@@ -25,6 +27,7 @@ logging.basicConfig(level=Config.LOG_LEVEL, format="%(asctime)s [%(levelname)s] 
 logger = logging.getLogger("api")
 
 app = FastAPI(title="iCloud Contacts Sync – Interne API", version="1.0.0")
+app.add_middleware(SessionMiddleware, secret_key=secrets.token_hex(32), session_cookie="ics_session")
 app.mount("/static", StaticFiles(directory="api/static"), name="static")
 templates = Jinja2Templates(directory="api/templates")
 
@@ -44,6 +47,16 @@ def _account_filter_clause(account_name: str | None) -> tuple[str, list]:
     if account_name is None:
         return "", []
     return "WHERE account = %s", [account_name]
+
+
+def _resolve_effective_account(request: Request, current_user: str) -> tuple[str | None, bool, bool]:
+    account_name, is_admin = resolve_account_for_user(current_user)
+    if not is_admin:
+        return account_name, False, False
+    show_all = request.session.get("show_all", False)
+    if show_all:
+        return None, True, True
+    return account_name, True, False
 
 
 @app.get("/api/health")
@@ -178,7 +191,7 @@ def web_dashboard(
     request: Request,
     current_user: str = Depends(get_current_user),
 ):
-    account_name, is_admin = resolve_account_for_user(current_user)
+    account_name, is_admin, show_all = _resolve_effective_account(request, current_user)
 
     with db.get_connection() as conn:
         contact_count = db.get_contact_count(conn, account_name)
@@ -222,6 +235,7 @@ def web_dashboard(
             "request": request,
             "current_user": current_user,
             "is_admin": is_admin,
+            "show_all": show_all,
             "account_name": account_name or "alle Accounts",
             "contact_count": contact_count,
             "upcoming_birthdays": upcoming_birthdays,
@@ -233,13 +247,47 @@ def web_dashboard(
     )
 
 
+@app.get("/admin", response_class=HTMLResponse)
+def web_admin(
+    request: Request,
+    current_user: str = Depends(get_current_user),
+):
+    _, is_admin, _ = resolve_account_for_user(current_user)
+    if not is_admin:
+        return RedirectResponse(url="/", status_code=303)
+
+    show_all = request.session.get("show_all", False)
+    return templates.TemplateResponse(
+        "admin.html",
+        {
+            "request": request,
+            "current_user": current_user,
+            "show_all": show_all,
+        },
+    )
+
+
+@app.post("/admin/toggle")
+def admin_toggle(
+    request: Request,
+    current_user: str = Depends(get_current_user),
+):
+    _, is_admin, _ = resolve_account_for_user(current_user)
+    if not is_admin:
+        return RedirectResponse(url="/", status_code=303)
+
+    show_all = request.session.get("show_all", False)
+    request.session["show_all"] = not show_all
+    return RedirectResponse(url="/admin", status_code=303)
+
+
 @app.get("/search", response_class=HTMLResponse)
 def web_search(
     request: Request,
     search: str | None = Query(default=None),
     current_user: str = Depends(get_current_user),
 ):
-    account_name, is_admin = resolve_account_for_user(current_user)
+    account_name, is_admin, show_all = _resolve_effective_account(request, current_user)
 
     with db.get_connection() as conn:
         where_clause, params = _account_filter_clause(account_name)
@@ -271,6 +319,7 @@ def web_search(
             "request": request,
             "current_user": current_user,
             "is_admin": is_admin,
+            "show_all": show_all,
             "account_name": account_name or "alle Accounts",
             "contacts": rows,
             "search": search or "",
@@ -285,7 +334,7 @@ def web_contact(
     search: str | None = Query(default=None),
     current_user: str = Depends(get_current_user),
 ):
-    account_name, is_admin = resolve_account_for_user(current_user)
+    account_name, is_admin, show_all = _resolve_effective_account(request, current_user)
 
     with db.get_connection() as conn:
         where_clause, params = _account_filter_clause(account_name)
@@ -311,6 +360,7 @@ def web_contact(
             "request": request,
             "current_user": current_user,
             "is_admin": is_admin,
+            "show_all": show_all,
             "contact": contact,
             "search": search or "",
         },

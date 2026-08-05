@@ -219,7 +219,7 @@
 
         <div class="meta">
             Angemeldet als <strong>{{ current_user }}</strong>
-            {% if is_admin %}(Admin, sieht alle Accounts){% else %}(Account: {{ account_name }}){% endif %}
+            {% if is_admin %}(<a href="/admin" style="color:inherit">Admin</a>{% if show_all %}, sieht alle Accounts{% endif %}){% else %}(Account: {{ account_name }}){% endif %}
         </div>
 
         <form class="search-form" method="get" action="/search">
