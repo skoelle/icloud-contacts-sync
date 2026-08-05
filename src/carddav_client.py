@@ -15,6 +15,7 @@ antwortet der Server mit 403 valid-sync-token, dann fällt der Client automatisc
 auf einen vollständigen Re-Sync zurück.
 """
 import logging
+import time
 from urllib.parse import urljoin
 from xml.etree import ElementTree as ET
 
@@ -41,18 +42,25 @@ class CardDAVClient:
         self.timeout = timeout
         self.session = requests.Session()
 
-    def _request(self, method: str, url: str, body: str, depth: str = "0"):
+    def _request(self, method: str, url: str, body: str, depth: str = "0", max_retries: int = 3):
         headers = {"Depth": depth, "Content-Type": "application/xml; charset=utf-8"}
-        resp = self.session.request(
-            method, url, data=body, headers=headers, auth=self.auth, timeout=self.timeout,
-        )
-        if resp.status_code == 403 and "valid-sync-token" in resp.text:
-            raise SyncTokenInvalid("sync-token vom Server abgelehnt")
-        if resp.status_code == 503:
-            retry_after = resp.headers.get("Retry-After")
-            logger.warning("503 Service Unavailable — Retry-After: %s", retry_after or "nicht angegeben")
-        resp.raise_for_status()
-        return ET.fromstring(resp.content)
+        for attempt in range(max_retries + 1):
+            resp = self.session.request(
+                method, url, data=body, headers=headers, auth=self.auth, timeout=self.timeout,
+            )
+            if resp.status_code == 403 and "valid-sync-token" in resp.text:
+                raise SyncTokenInvalid("sync-token vom Server abgelehnt")
+            if resp.status_code == 503 and attempt < max_retries:
+                retry_after = resp.headers.get("Retry-After")
+                wait = int(retry_after) if retry_after and retry_after.isdigit() else 60
+                logger.warning("503 Service Unavailable — warte %ds (Versuch %d/%d)", wait, attempt + 1, max_retries)
+                time.sleep(wait)
+                continue
+            if resp.status_code == 503:
+                retry_after = resp.headers.get("Retry-After")
+                logger.error("503 Service Unavailable — Retry-After: %s, alle %d Versuche aufgebraucht", retry_after or "nicht angegeben", max_retries)
+            resp.raise_for_status()
+            return ET.fromstring(resp.content)
 
     def discover_principal(self) -> str:
         body = """<?xml version="1.0" encoding="utf-8" ?>
