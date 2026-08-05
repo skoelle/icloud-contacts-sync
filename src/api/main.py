@@ -192,6 +192,7 @@ def web_index(
 def web_contact(
     request: Request,
     contact_id: int,
+    search: str | None = Query(default=None),
     current_user: str = Depends(get_current_user),
 ):
     account_name, is_admin = resolve_account_for_user(current_user)
@@ -221,5 +222,6 @@ def web_contact(
             "current_user": current_user,
             "is_admin": is_admin,
             "contact": contact,
+            "search": search or "",
         },
     )

@@ -181,7 +181,7 @@
         <div class="contacts-list">
             {% if contacts %}
                 {% for c in contacts %}
-                <a href="/contacts/{{ c.id }}" class="contact-card">
+                <a href="/contacts/{{ c.id }}{% if search %}?search={{ search }}{% endif %}" class="contact-card">
                     <div class="contact-header">
                         <div>
                             <div class="contact-name">{{ c.full_name or '(Kein Name)' }}</div>
