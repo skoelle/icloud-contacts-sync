@@ -252,7 +252,7 @@ def web_admin(
     request: Request,
     current_user: str = Depends(get_current_user),
 ):
-    _, is_admin, _ = resolve_account_for_user(current_user)
+    _, is_admin, _ = _resolve_effective_account(request, current_user)
     if not is_admin:
         return RedirectResponse(url="/", status_code=303)
 
@@ -272,7 +272,7 @@ def admin_toggle(
     request: Request,
     current_user: str = Depends(get_current_user),
 ):
-    _, is_admin, _ = resolve_account_for_user(current_user)
+    _, is_admin, _ = _resolve_effective_account(request, current_user)
     if not is_admin:
         return RedirectResponse(url="/", status_code=303)
 
