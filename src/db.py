@@ -157,18 +157,18 @@ def get_contact_count(conn, account: str | None) -> int:
 def search_contacts_without_photo(conn, account: str | None) -> list[dict]:
     where_clause, params = _account_filter_clause(account)
     op = "AND" if where_clause else "WHERE"
-    name_cond = f"{op} given_name IS NOT NULL AND given_name != '' AND family_name IS NOT NULL AND family_name != ''"
-    city_cond = "AND (JSON_SEARCH(addresses, 'one', '%', NULL, '$[*].city') IS NOT NULL)"
     with conn.cursor() as cur:
         cur.execute(
             f"""SELECT id, full_name, given_name, middle_name, family_name,
                        prefix, suffix, organization, birthday, account, photo_url
                 FROM contacts {where_clause}
-                {name_cond} AND photo_base64 IS NULL AND photo_url IS NULL
-                {city_cond}
+                {op} given_name IS NOT NULL AND given_name != ''
+                AND family_name IS NOT NULL AND family_name != ''
+                AND photo_base64 IS NULL AND photo_url IS NULL
+                AND JSON_SEARCH(addresses, 'one', %s, NULL, '$[*].city') IS NOT NULL
                 AND family_name != 'X'
                 ORDER BY full_name""",
-            params,
+            params + ['%'],
         )
         return cur.fetchall()
 
@@ -176,18 +176,18 @@ def search_contacts_without_photo(conn, account: str | None) -> list[dict]:
 def search_contacts_without_city(conn, account: str | None) -> list[dict]:
     where_clause, params = _account_filter_clause(account)
     op = "AND" if where_clause else "WHERE"
-    name_cond = f"{op} given_name IS NOT NULL AND given_name != '' AND family_name IS NOT NULL AND family_name != ''"
-    contact_cond = "AND (JSON_LENGTH(phones) > 0 OR JSON_LENGTH(emails) > 0)"
-    city_cond = "AND (JSON_LENGTH(addresses) = 0 OR JSON_SEARCH(addresses, 'one', '%', NULL, '$[*].city') IS NULL)"
     with conn.cursor() as cur:
         cur.execute(
             f"""SELECT id, full_name, given_name, middle_name, family_name,
                        prefix, suffix, organization, birthday, account, photo_url
                 FROM contacts {where_clause}
-                {name_cond} {contact_cond} {city_cond}
+                {op} given_name IS NOT NULL AND given_name != ''
+                AND family_name IS NOT NULL AND family_name != ''
+                AND (JSON_LENGTH(phones) > 0 OR JSON_LENGTH(emails) > 0)
+                AND (JSON_LENGTH(addresses) = 0 OR JSON_SEARCH(addresses, 'one', %s, NULL, '$[*].city') IS NULL)
                 AND family_name != 'X'
                 ORDER BY full_name""",
-            params,
+            params + ['%'],
         )
         return cur.fetchall()
 
@@ -195,15 +195,15 @@ def search_contacts_without_city(conn, account: str | None) -> list[dict]:
 def search_contacts_without_social(conn, account: str | None) -> list[dict]:
     where_clause, params = _account_filter_clause(account)
     op = "AND" if where_clause else "WHERE"
-    name_cond = f"{op} given_name IS NOT NULL AND given_name != '' AND family_name IS NOT NULL AND family_name != ''"
-    contact_cond = "AND (JSON_LENGTH(phones) > 0 OR JSON_LENGTH(emails) > 0)"
-    social_cond = "AND (social_profiles IS NULL OR JSON_LENGTH(social_profiles) = 0)"
     with conn.cursor() as cur:
         cur.execute(
             f"""SELECT id, full_name, given_name, middle_name, family_name,
                        prefix, suffix, organization, birthday, account, photo_url
                 FROM contacts {where_clause}
-                {name_cond} {contact_cond} {social_cond}
+                {op} given_name IS NOT NULL AND given_name != ''
+                AND family_name IS NOT NULL AND family_name != ''
+                AND (JSON_LENGTH(phones) > 0 OR JSON_LENGTH(emails) > 0)
+                AND (social_profiles IS NULL OR JSON_LENGTH(social_profiles) = 0)
                 AND family_name != 'X'
                 ORDER BY full_name""",
             params,
