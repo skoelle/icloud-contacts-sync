@@ -108,7 +108,13 @@ def upsert_contacts(conn, contacts: list[dict], run_id: str):
                 f"INSERT INTO contacts ({', '.join(cols)}) VALUES ({placeholders}) "
                 f"ON DUPLICATE KEY UPDATE {update_clause}"
             )
-            cur.execute(sql, list(c.values()))
+            try:
+                cur.execute(sql, list(c.values()))
+            except Exception as exc:
+                logger.error("INSERT fehlgeschlagen für UID %s: %s", c.get("uid"), exc)
+                logger.error("SQL: %s", sql[:500])
+                logger.error("Values: %s", {k: v for k, v in c.items() if k != "raw_vcard"})
+                raise
     conn.commit()
 
 
@@ -202,6 +208,11 @@ def replace_all_contacts_for_account(conn, account: str, contacts: list[dict], r
             c = _sanitize_contact(c)
             cols = ", ".join(c.keys())
             placeholders = ", ".join(["%s"] * len(c))
-            cur.execute(f"INSERT INTO contacts ({cols}) VALUES ({placeholders})", list(c.values()))
+            try:
+                cur.execute(f"INSERT INTO contacts ({cols}) VALUES ({placeholders})", list(c.values()))
+            except Exception as exc:
+                logger.error("INSERT fehlgeschlagen für UID %s: %s", c.get("uid"), exc)
+                logger.error("Values: %s", {k: v for k, v in c.items() if k != "raw_vcard"})
+                raise
     conn.commit()
     logger.info("Voller Re-Sync für Account %s abgeschlossen: %d Kontakte", account, len(contacts))

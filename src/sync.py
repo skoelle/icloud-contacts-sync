@@ -94,7 +94,11 @@ def sync_account(conn, account, href_to_uid_cache: dict):
         )
     except Exception as exc:
         logger.exception("[%s] Sync-Lauf %s fehlgeschlagen", account.name, run_id)
-        db.finish_sync_run(conn, run_id, "failed", error_message=str(exc))
+        print(f"SYNC-FEHLER [{account.name}]: {exc}", file=sys.stderr)
+        detail = str(exc)
+        if "Unknown column" in detail:
+            detail += " — Fehlende Spalte? ALTER TABLE ausführen: siehe sql/schema.sql"
+        db.finish_sync_run(conn, run_id, "failed", error_message=detail)
         raise
 
 

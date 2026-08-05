@@ -1,5 +1,6 @@
 .env
 config/accounts.json
+.venv/
 __pycache__/
 *.pyc
 .DS_Store
