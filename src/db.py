@@ -160,7 +160,7 @@ def get_upcoming_birthdays(conn, account: str | None, days: int = 7) -> list[dic
     with conn.cursor() as cur:
         cur.execute(
             f"""SELECT id, full_name, given_name, middle_name, family_name,
-                       prefix, suffix, organization, birthday, account
+                       prefix, suffix, organization, birthday, account, photo_url
                 FROM contacts {where_clause}
                 {"AND" if where_clause else "WHERE"} birthday IS NOT NULL
                 AND (
