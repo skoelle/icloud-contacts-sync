@@ -38,6 +38,9 @@ def sync_account(conn, account, href_to_uid_cache: dict):
                 else:
                     logger.warning("[%s] vCard konnte nicht geparst werden, überspringe", account.name)
             db.replace_all_contacts_for_account(conn, account.name, contacts, run_id)
+            _, _, _, new_token = client.sync_collection(collection_url, None)
+            if new_token:
+                db.save_sync_token(conn, account.name, new_token)
             db.finish_sync_run(conn, run_id, "success", upserted=len(contacts), deleted=0)
             logger.info("[%s] Initialer Sync abgeschlossen: %d Kontakte", account.name, len(contacts))
             return
@@ -56,6 +59,9 @@ def sync_account(conn, account, href_to_uid_cache: dict):
                 else:
                     logger.warning("[%s] vCard konnte nicht geparst werden, überspringe", account.name)
             db.replace_all_contacts_for_account(conn, account.name, contacts, run_id)
+            _, _, _, new_token = client.sync_collection(collection_url, None)
+            if new_token:
+                db.save_sync_token(conn, account.name, new_token)
             db.finish_sync_run(conn, run_id, "success", upserted=len(contacts), deleted=0)
             logger.info("[%s] Re-Sync abgeschlossen: %d Kontakte", account.name, len(contacts))
             return
