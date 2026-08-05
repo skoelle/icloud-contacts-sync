@@ -19,7 +19,7 @@ logger = logging.getLogger("sync")
 
 
 def sync_account(conn, account, href_to_uid_cache: dict):
-    client = CardDAVClient(ICLOUD_BASE_URL, account.apple_email, account.apple_app_password)
+    client = CardDAVClient(ICLOUD_BASE_URL, account.apple_email, account.apple_app_password, account_name=account.name)
     collection_url = client.discover_collection()
 
     stored_token = db.get_sync_token(conn, account.name)

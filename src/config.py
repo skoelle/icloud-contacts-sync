@@ -1,7 +1,8 @@
 # Copyright (c) 2026 Stefan Koelle (https://stefankoelle.de)
 # Licensed under the MIT License. See LICENSE file in project root for details.
-import os
 import json
+import os
+
 from dotenv import load_dotenv
 
 load_dotenv()
