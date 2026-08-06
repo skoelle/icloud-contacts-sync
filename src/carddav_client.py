@@ -119,6 +119,7 @@ class CardDAVClient:
         logger.debug("sync-collection: %d response-Elemente erhalten", len(responses))
 
         vcards, etags, deleted_hrefs = [], [], []
+        missing_hrefs = []
         for response in responses:
             status_el = response.find(".//d:status", NS)
             status_text = status_el.text if status_el is not None else ""
@@ -136,10 +137,22 @@ class CardDAVClient:
 
             data = response.find(".//card:address-data", NS)
             has_data = data is not None and bool(data.text)
-            logger.debug("  UPSERT href=%s etag=%s status='%s' has_data=%s", href, etag, status_text, has_data)
             if has_data:
+                logger.debug("  UPSERT href=%s etag=%s (inline data)", href, etag)
                 vcards.append(data.text)
                 etags.append(etag)
+            else:
+                logger.debug("  UPSERT href=%s etag=%s (keine Daten, hole per GET)", href, etag)
+                if href:
+                    missing_hrefs.append((href, etag))
+
+        for href, etag in missing_hrefs:
+            vcard_text = self._get_vcard_by_href(collection_url, href)
+            if vcard_text:
+                vcards.append(vcard_text)
+                etags.append(etag)
+            else:
+                logger.warning("Konnte vCard nicht abrufen: %s", href)
 
         new_token_el = root.find("d:sync-token", NS)
         new_token = new_token_el.text if new_token_el is not None else None
@@ -164,6 +177,16 @@ class CardDAVClient:
                 vcards.append(data.text)
                 etags.append(etag)
         return vcards, etags
+
+    def _get_vcard_by_href(self, collection_url: str, href: str) -> str | None:
+        url = urljoin(collection_url, href)
+        try:
+            resp = self.session.get(url, auth=self.auth, timeout=self.timeout)
+            resp.raise_for_status()
+            return resp.text
+        except requests.RequestException as exc:
+            logger.warning("GET %s fehlgeschlagen: %s", url, exc)
+            return None
 
     def discover_collection(self) -> str:
         principal = self.discover_principal()
