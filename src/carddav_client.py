@@ -98,13 +98,11 @@ class CardDAVClient:
                     return self._absolute(href.text)
         raise RuntimeError("Keine addressbook-Collection gefunden")
 
-    def sync_collection(self, collection_url: str, sync_token: str | None):
+    def sync_collection(self, collection_url: str, sync_token: str | None, fetch_missing: bool = True):
         """
         Führt REPORT sync-collection aus.
         Gibt (changed_vcards, etags, deleted_hrefs, new_sync_token) zurück.
-        changed_vcards: list[str] roher vCard-Text
-        etags: list[str|None] ETag pro vCard (None wenn nicht vorhanden)
-        deleted_hrefs: list[str] Hrefs von gelöschten Kontakten (status 404)
+        fetch_missing: Wenn True, werden Kontakte ohne address-data per GET nachgeholt.
         """
         token_element = f"<d:sync-token>{sync_token}</d:sync-token>" if sync_token else "<d:sync-token/>"
         body = f"""<?xml version="1.0" encoding="utf-8" ?>
@@ -141,10 +139,12 @@ class CardDAVClient:
                 logger.debug("  UPSERT href=%s etag=%s (inline data)", href, etag)
                 vcards.append(data.text)
                 etags.append(etag)
-            else:
+            elif fetch_missing:
                 logger.debug("  UPSERT href=%s etag=%s (keine Daten, hole per GET)", href, etag)
                 if href:
                     missing_hrefs.append((href, etag))
+            else:
+                logger.debug("  SKIP href=%s etag=%s (keine Daten, fetch_missing=False)", href, etag)
 
         for href, etag in missing_hrefs:
             vcard_text = self._get_vcard_by_href(collection_url, href)
