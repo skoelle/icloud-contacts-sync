@@ -22,7 +22,7 @@ def fetch_todays_birthdays(conn) -> list[dict]:
     today = date.today()
     with conn.cursor() as cur:
         cur.execute(
-            """SELECT id, account, full_name, birthday
+            """SELECT id, account, full_name, birthday, organization, photo_url
                FROM contacts
                WHERE birthday IS NOT NULL
                  AND MONTH(birthday) = %s
@@ -66,7 +66,10 @@ def build_message(birthdays: list[dict]) -> EmailMessage:
     plain_lines = [f"Heutige Geburtstage ({today.isoformat()}):", ""]
     for b in birthdays:
         age = today.year - b["birthday"].year
-        line = f"- {b['full_name']} (wird {age}, Account: {b['account']})"
+        date_str = b["birthday"].strftime("%d.%m.")
+        line = f"- {b['full_name']}  · {date_str} · {age} Jahre"
+        if b.get("organization"):
+            line += f"  ({b['organization']})"
         if Config.WEB_URL:
             line += f"  → {Config.WEB_URL.rstrip('/')}/contacts/{b['id']}"
         plain_lines.append(line)
@@ -77,19 +80,25 @@ def build_message(birthdays: list[dict]) -> EmailMessage:
     cards_html = ""
     for b in birthdays:
         age = today.year - b["birthday"].year
+        date_str = b["birthday"].strftime("%d.%m.")
         contact_link = f"{Config.WEB_URL.rstrip('/')}/contacts/{b['id']}" if Config.WEB_URL else ""
         name_html = f'<a href="{contact_link}" style="color:#222;text-decoration:none;">{b["full_name"]}</a>' if contact_link else b["full_name"]
+        is_today = b["birthday"].month == today.month and b["birthday"].day == today.day
+        card_bg = "#fff3cd" if is_today else "#fff"
+        org_html = f'<div style="font-size:14px;color:#666;margin-top:4px;">{b["organization"]}</div>' if b.get("organization") else ""
+        photo_html = ""
+        if b.get("photo_url"):
+            photo_html = f'<img src="{b["photo_url"]}" alt="" style="width:80px;height:80px;border-radius:50%;object-fit:cover;flex-shrink:0;">'
         cards_html += f"""
         <tr>
-          <td style="background:#fff;border-radius:8px;padding:1rem 1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+          <td style="background:{card_bg};border-radius:8px;padding:1rem 1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;">
               <div>
                 <div style="font-size:18px;font-weight:600;color:#222;">{name_html}</div>
-                <div style="font-size:14px;color:#666;margin-top:4px;">Account: {b['account']}</div>
+                {org_html}
+                <div style="font-size:14px;color:#888;margin-top:4px;">🎂 {date_str} · {age} Jahre</div>
               </div>
-              <div style="display:inline-block;padding:4px 10px;border-radius:4px;font-size:12px;font-weight:500;background:#fff3cd;color:#856404;">
-                🎂 wird {age}
-              </div>
+              {photo_html}
             </div>
           </td>
         </tr>
