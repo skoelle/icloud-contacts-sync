@@ -88,37 +88,49 @@ def build_message(birthdays: list[dict], target_date: date | None = None) -> Ema
         age = fmt_birthday_age(b["birthday"], today)
         age_str = f' <span style="white-space:nowrap;">· {age} Jahre</span>' if age is not None else ""
         contact_link = f"{Config.WEB_URL.rstrip('/')}/contacts/{b['id']}" if Config.WEB_URL else ""
-        link_start = f'<a href="{contact_link}" style="color:#222;text-decoration:none;display:block;">' if contact_link else ""
-        link_end = "</a>" if contact_link else ""
         is_today = b["birthday"].month == today.month and b["birthday"].day == today.day
-        card_bg = "#fff3cd" if is_today else "#fff"
+        card_bg = "#fff3cd" if is_today else "#ffffff"
+        border_color = "#ffc107" if is_today else "#e0e0e0"
         org_html = f'<div style="font-size:14px;color:#666;margin-top:4px;">{b["organization"]}</div>' if b.get("organization") else ""
-        photo_html = ""
+        photo_cell = ""
         if b.get("photo_url"):
-            photo_html = f'<img src="{b["photo_url"]}" alt="" style="width:80px;height:80px;border-radius:50%;object-fit:cover;flex-shrink:0;">'
-        cards_html += f"""
-        <tr>
-          <td style="background:{card_bg};border-radius:8px;padding:1rem 1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-            {link_start}
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;">
-              <div>
+            photo_cell = f'<td width="80" valign="top" style="padding-left:16px;"><img src="{b["photo_url"]}" alt="" width="80" height="80" style="border-radius:50%;display:block;"></td>'
+        if contact_link:
+            content_html = f"""<a href="{contact_link}" style="color:#222;text-decoration:none;display:block;">
                 <div style="font-size:18px;font-weight:600;color:#222;">{b["full_name"]}</div>
                 {org_html}
                 <div style="font-size:14px;color:#888;margin-top:4px;">🎂 {date_str}{age_str}</div>
-              </div>
-              {photo_html}
-            </div>
-            {link_end}
+              </a>"""
+        else:
+            content_html = f"""<div style="font-size:18px;font-weight:600;color:#222;">{b["full_name"]}</div>
+              {org_html}
+              <div style="font-size:14px;color:#888;margin-top:4px;">🎂 {date_str}{age_str}</div>"""
+        cards_html += f"""
+        <tr>
+          <td style="padding:0 0 12px 0;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:{card_bg};border:1px solid {border_color};">
+              <tr>
+                <td style="padding:16px 20px;">
+                  {content_html}
+                </td>
+                {photo_cell}
+              </tr>
+            </table>
           </td>
-        </tr>
-        <tr><td style="height:12px;"></td></tr>"""
+        </tr>"""
 
     link_html = ""
     if Config.WEB_URL:
         link_html = f"""
           <tr>
-            <td style="padding-top:24px;text-align:center;">
-              <a href="{Config.WEB_URL}" style="display:inline-block;padding:12px 24px;background:#0066cc;color:#fff;text-decoration:none;border-radius:6px;font-size:14px;">Alle Kontakte ansehen</a>
+            <td style="padding:24px 0 0 0;" align="center">
+              <table cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="background:#0066cc;border-radius:4px;">
+                    <a href="{Config.WEB_URL}" style="display:inline-block;padding:12px 24px;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;">Alle Kontakte ansehen</a>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>"""
 
@@ -127,16 +139,21 @@ def build_message(birthdays: list[dict], target_date: date | None = None) -> Ema
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
 </head>
 <body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <!--[if mso]>
+  <style>body,table,td {{ font-family:Arial,sans-serif !important; }}</style>
+  <![endif]-->
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;">
     <tr>
-      <td align="center" style="padding:2rem 1rem;">
+      <td align="center" style="padding:32px 16px;">
         <table width="800" cellpadding="0" cellspacing="0" style="max-width:800px;width:100%;">
           <tr>
-            <td>
-              <h1 style="font-size:24px;font-weight:600;color:#222;margin:0 0 8px 0;">Geburtstage heute</h1>
-              <p style="font-size:14px;color:#666;margin:0 0 24px 0;">{today.strftime('%d.%m.%Y')} · {len(birthdays)} Kontakte</p>
+            <td style="padding:0 0 8px 0;">
+              <h1 style="font-size:24px;font-weight:600;color:#222;margin:0;">Geburtstage heute</h1>
+              <p style="font-size:14px;color:#666;margin:8px 0 0 0;">{today.strftime('%d.%m.%Y')} · {len(birthdays)} Kontakte</p>
             </td>
           </tr>
           <tr>
