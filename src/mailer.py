@@ -89,12 +89,11 @@ def build_message(birthdays: list[dict], target_date: date | None = None) -> Ema
         age_str = f' <span style="white-space:nowrap;">· {age} Jahre</span>' if age is not None else ""
         contact_link = f"{Config.WEB_URL.rstrip('/')}/contacts/{b['id']}" if Config.WEB_URL else ""
         is_today = b["birthday"].month == today.month and b["birthday"].day == today.day
-        card_bg = "#fff3cd" if is_today else "#ffffff"
-        border_color = "#ffc107" if is_today else "#e0e0e0"
+        card_bg = "#f0f0f0" if is_today else "#ffffff"
         org_html = f'<div style="font-size:14px;color:#666;margin-top:4px;">{b["organization"]}</div>' if b.get("organization") else ""
         photo_cell = ""
         if b.get("photo_url"):
-            photo_cell = f'<td width="80" valign="top" style="padding-left:16px;"><img src="{b["photo_url"]}" alt="" width="80" height="80" style="border-radius:50%;display:block;"></td>'
+            photo_cell = f'<td width="96" valign="top" style="padding-left:20px;"><img src="{b["photo_url"]}" alt="" width="80" height="80" style="border-radius:50%;display:block;"></td>'
         if contact_link:
             content_html = f"""<a href="{contact_link}" style="color:#222;text-decoration:none;display:block;">
                 <div style="font-size:18px;font-weight:600;color:#222;">{b["full_name"]}</div>
@@ -108,7 +107,7 @@ def build_message(birthdays: list[dict], target_date: date | None = None) -> Ema
         cards_html += f"""
         <tr>
           <td style="padding:0 0 12px 0;">
-            <table width="100%" cellpadding="0" cellspacing="0" style="background:{card_bg};border:1px solid {border_color};">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:{card_bg};border:1px solid #e0e0e0;">
               <tr>
                 <td style="padding:16px 20px;">
                   {content_html}
@@ -149,21 +148,17 @@ def build_message(birthdays: list[dict], target_date: date | None = None) -> Ema
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;">
     <tr>
       <td align="center" style="padding:32px 16px;">
-        <table width="800" cellpadding="0" cellspacing="0" style="max-width:800px;width:100%;">
+        <table width="800" cellpadding="0" cellspacing="0" style="max-width:800px;width:100%;background:#ffffff;">
           <tr>
-            <td style="padding:0 0 8px 0;">
+            <td style="padding:32px;">
               <h1 style="font-size:24px;font-weight:600;color:#222;margin:0;">Geburtstage heute</h1>
-              <p style="font-size:14px;color:#666;margin:8px 0 0 0;">{today.strftime('%d.%m.%Y')} · {len(birthdays)} Kontakte</p>
-            </td>
-          </tr>
-          <tr>
-            <td>
+              <p style="font-size:14px;color:#666;margin:8px 0 24px 0;">{today.strftime('%d.%m.%Y')} · {len(birthdays)} Kontakte</p>
               <table width="100%" cellpadding="0" cellspacing="0">
                 {cards_html}
               </table>
+              {link_html}
             </td>
           </tr>
-          {link_html}
         </table>
       </td>
     </tr>
