@@ -644,6 +644,7 @@ def web_contact(
             "is_admin": is_admin,
             "show_all": show_all,
             "contact": contact,
+            "groups": groups,
             "search": search or "",
             "custom_links": resolved_links,
         },

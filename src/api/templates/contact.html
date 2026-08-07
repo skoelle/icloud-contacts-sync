@@ -422,12 +422,12 @@
                 </div>
                 {% endif %}
 
-                {% if contact.groups %}
+                {% if groups %}
                 <div class="section">
                     <div class="section-title">Gruppen</div>
                     <div class="tags">
-                        {% for group_name in contact.groups %}
-                        <span class="tag">{{ group_name }}</span>
+                        {% for g in groups %}
+                        <a href="/search?group={{ g.uid|urlquote }}" class="tag" style="text-decoration:none;color:inherit;">{{ g.name or '(Ohne Name)' }}</a>
                         {% endfor %}
                     </div>
                 </div>
