@@ -100,6 +100,8 @@ Siehe `sql/schema.sql`. Wichtigste Änderungen gegenüber v1:
   konfigurierten Stunde (Default 7 Uhr).
 - Query: alle Kontakte über alle Accounts hinweg, deren `birthday`
   (Monat/Tag) auf das heutige Datum fällt.
+- Versand nur bei existierenden Geburtstagen: Wird keine E-Mail
+  versendet, wenn die Abfrage keine Treffer liefert.
 - Versand per SMTP mit STARTTLS (`smtplib`), Konfiguration über
   `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM`,
   `MAIL_TO`.

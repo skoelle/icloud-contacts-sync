@@ -11,8 +11,8 @@ import sys
 from datetime import date
 from email.message import EmailMessage
 
-from config import Config
 import db
+from config import Config
 
 logging.basicConfig(level=Config.LOG_LEVEL, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("mailer")
@@ -181,6 +181,10 @@ def main() -> int:
             return 0
 
         birthdays = fetch_todays_birthdays(conn)
+        if not birthdays:
+            logger.info("Keine Geburtstage heute, überspringe Mailversand")
+            return 0
+
         msg = build_message(birthdays)
         try:
             send_message(msg)
