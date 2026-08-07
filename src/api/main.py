@@ -24,6 +24,7 @@ from api.auth import get_current_user, resolve_account_for_user
 from api.schemas import ContactListResponse, ContactOut, SyncRunOut
 from config import Config
 from mailer import build_message, fetch_birthdays_for_date, send_message
+from utils import fmt_birthday_age, fmt_birthday_short
 
 logging.basicConfig(level=Config.LOG_LEVEL, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("api")
@@ -33,6 +34,8 @@ app.add_middleware(SessionMiddleware, secret_key=secrets.token_hex(32), session_
 app.mount("/static", StaticFiles(directory="api/static"), name="static")
 templates = Jinja2Templates(directory="api/templates")
 templates.env.filters["urlquote"] = lambda s: quote_plus(s or "")
+templates.env.filters["fmt_birthday"] = fmt_birthday_short
+templates.env.filters["fmt_age"] = fmt_birthday_age
 
 
 def _fmt_ts(dt) -> str | None:

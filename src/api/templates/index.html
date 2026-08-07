@@ -198,7 +198,7 @@
                             <div class="contact-organization">{{ c.organization }}</div>
                             {% endif %}
                             {% if c.birthday %}
-                            <div class="contact-birthday">{{ c.birthday }}</div>
+                            <div class="contact-birthday">{{ c.birthday|fmt_birthday }}</div>
                             {% endif %}
                         </div>
                         <div style="display:flex;flex-direction:column;align-items:center;gap:0.3rem">

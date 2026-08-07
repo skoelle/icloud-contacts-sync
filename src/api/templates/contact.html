@@ -332,7 +332,7 @@
                 {% if contact.birthday %}
                 <div class="section">
                     <div class="birthday-highlight">
-                        🎂 {{ contact.birthday }}
+                        🎂 {{ contact.birthday|fmt_birthday }}
                     </div>
                 </div>
                 {% endif %}

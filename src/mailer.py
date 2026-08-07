@@ -13,6 +13,7 @@ from email.message import EmailMessage
 
 import db
 from config import Config
+from utils import fmt_birthday_age, fmt_birthday_short
 
 logging.basicConfig(level=Config.LOG_LEVEL, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("mailer")
@@ -68,9 +69,10 @@ def build_message(birthdays: list[dict], target_date: date | None = None) -> Ema
 
     plain_lines = [f"Heutige Geburtstage ({today.isoformat()}):", ""]
     for b in birthdays:
-        age = today.year - b["birthday"].year
-        date_str = b["birthday"].strftime("%d.%m.")
-        line = f"- {b['full_name']}  · {date_str} · {age} Jahre"
+        date_str = fmt_birthday_short(b["birthday"])
+        age = fmt_birthday_age(b["birthday"], today)
+        age_str = f" · {age} Jahre" if age is not None else ""
+        line = f"- {b['full_name']}  · {date_str}{age_str}"
         if b.get("organization"):
             line += f"  ({b['organization']})"
         if Config.WEB_URL:
@@ -82,8 +84,9 @@ def build_message(birthdays: list[dict], target_date: date | None = None) -> Ema
 
     cards_html = ""
     for b in birthdays:
-        age = today.year - b["birthday"].year
-        date_str = b["birthday"].strftime("%d.%m.")
+        date_str = fmt_birthday_short(b["birthday"])
+        age = fmt_birthday_age(b["birthday"], today)
+        age_str = f" · {age} Jahre" if age is not None else ""
         contact_link = f"{Config.WEB_URL.rstrip('/')}/contacts/{b['id']}" if Config.WEB_URL else ""
         name_html = f'<a href="{contact_link}" style="color:#222;text-decoration:none;">{b["full_name"]}</a>' if contact_link else b["full_name"]
         is_today = b["birthday"].month == today.month and b["birthday"].day == today.day
@@ -99,7 +102,7 @@ def build_message(birthdays: list[dict], target_date: date | None = None) -> Ema
               <div>
                 <div style="font-size:18px;font-weight:600;color:#222;">{name_html}</div>
                 {org_html}
-                <div style="font-size:14px;color:#888;margin-top:4px;">🎂 {date_str} · {age} Jahre</div>
+                <div style="font-size:14px;color:#888;margin-top:4px;">🎂 {date_str}{age_str}</div>
               </div>
               {photo_html}
             </div>
