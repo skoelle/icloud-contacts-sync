@@ -248,7 +248,7 @@ def get_upcoming_birthdays(conn, account: str | None, days: int = 7) -> list[dic
                     (MONTH(birthday) < %s)
                     OR (MONTH(birthday) = %s AND DAY(birthday) <= %s + %s)
                 )
-                ORDER BY MONTH(birthday), DAY(birthday)""",
+                ORDER BY MONTH(birthday), DAY(birthday), given_name, family_name, full_name""",
             params + [today.month, today.month, today.day,
                        today.month, today.month, today.day, days],
         )
