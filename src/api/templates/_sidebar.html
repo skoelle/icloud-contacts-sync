@@ -5,7 +5,7 @@
         position: fixed;
         top: 136px;
         right: 2rem;
-        width: 280px;
+        width: 380px;
         background: #fff;
         border-radius: 8px;
         padding: 1rem 1.25rem;
@@ -15,18 +15,18 @@
     }
 
     .special-search-link {
-        display: block;
-        padding: 0.75rem;
-        background: #f8f9fa;
-        border-radius: 6px;
+        display: inline-block;
+        padding: 0.25rem 0.6rem;
+        background: #e7f3ff;
         color: #0066cc;
+        border-radius: 20px;
+        font-size: 0.8rem;
         text-decoration: none;
-        font-size: 0.875rem;
         transition: background 0.15s ease;
     }
 
     .special-search-link:hover {
-        background: #e7f3ff;
+        background: #d0e8ff;
         text-decoration: underline;
     }
 
@@ -84,7 +84,7 @@
     </div>
     {% endif %}
     <div class="sidebar-section-title">Special Searches</div>
-    <div class="sidebar-section-list">
+    <div class="group-cloud">
         <a href="/search/special?type=no_photo" class="special-search-link">ohne Bild</a>
         <a href="/search/special?type=no_city" class="special-search-link">ohne City</a>
         <a href="/search/special?type=no_social" class="special-search-link">ohne Social</a>
