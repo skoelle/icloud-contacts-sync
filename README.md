@@ -148,6 +148,38 @@ python3 mailer.py
   aus MariaDB entfernt, ohne Archiv.
 - Nur iCloud als Quelle, Google/Microsoft sind nicht Teil dieses Repos.
 
+## Kontaktruppen
+
+iCloud-Länder speichern Gruppen als eigene vCards mit
+`X-ADDRESSBOOKSERVER-KIND:group`. Diese werden beim Sync automatisch
+erkannt und separat in den Tabellen `groups` und `group_members`
+gespeichert (nicht als Kontakte).
+
+Gruppen sind über die API abrufbar:
+
+- `GET /api/groups` — Alle Gruppen mit Member-Anzahl
+- `GET /api/groups/{id}` — Gruppe mit aufgelösten Members
+- `GET /api/groups/{id}/members` — Nur Members einer Gruppe
+- `GET /api/contacts/{id}` — Enthält `groups`-Feld mit Gruppennamen
+
+Wird eine Gruppe gelöscht, werden zugehörige Memberschaften automatisch
+entfernt (`ON DELETE CASCADE`). Wird ein Mitglied-Kontakt gelöscht,
+wird der Member-Eintrag in allen Gruppen ebenfalls entfernt (manueller
+Cleanup im Sync-Code). Die Gruppe selbst bleibt erhalten.
+
+### Migration bei erstem Deploy
+
+Bei Bestands-DBs lagen Gruppen bisher als normale Kontakte in der
+`contacts`-Tabelle. Nach dem Deploy müssen diese einmalig bereinigt
+werden:
+
+1. Sync-Container stoppen: `docker compose stop icloud-contacts-sync`
+2. Sync-State zurücksetzen: `DELETE FROM sync_state;` (erzwingt vollen Re-Sync)
+3. Container neu starten: `docker compose start icloud-contacts-sync`
+
+Beim nächsten Sync-Lauf werden alle vCards neu klassifiziziert —
+Gruppen landen in `groups`, Kontakte bleiben in `contacts`.
+
 ## 11. Web-Ansicht und API (interner Zugriff über Authelia)
 
 Läuft als zweiter Service aus demselben Image, aber mit anderem
@@ -206,13 +238,16 @@ Zugriff ohne den Reverse-Proxy ist damit nicht möglich.
 |---------|------|--------------|
 | `GET` | `/` | Dashboard mit Kontaktdaten-Übersicht, letzten Sync-Status und Geburtstagen der nächsten 7 Tage (HTML) |
 | `GET` | `/search` | Web-UI -- Suchfunktion, zeigt Kontakte des eingeloggten Users |
-| `GET` | `/contacts/{id}` | Web-UI -- Detailseite eines einzelnen Kontakts |
+| `GET` | `/contacts/{id}` | Web-UI -- Detailseite eines einzelnen Kontakts (inkl. Gruppen) |
 | `GET` | `/api/health` | Health Check (`{"status": "ok"}`), kein Login nötig |
 | `GET` | `/api/contacts` | Kontaktsuche mit Pagination (`?q=...&limit=...&offset=...`) |
-| `GET` | `/api/contacts/{id}` | Einzelnen Kontakt per ID abrufen |
+| `GET` | `/api/contacts/{id}` | Einzelnen Kontakt per ID abrufen (inkl. `groups`-Feld) |
 | `GET` | `/api/contacts/count` | Anzahl der Kontakte des eingeloggten Users |
 | `GET` | `/api/contacts/birthdays/today` | Heutige Geburtstage |
 | `GET` | `/api/contacts/birthdays/upcoming` | Geburtstage der nächsten N Tage (`?days=7`, Default 7) |
+| `GET` | `/api/groups` | Gruppenliste mit Member-Anzahl |
+| `GET` | `/api/groups/{id}` | Einzelne Gruppe mit aufgelösten Members |
+| `GET` | `/api/groups/{id}/members` | Members einer Gruppe (Kontaktdaten) |
 | `GET` | `/api/sync-runs` | Letzte 50 Sync-Runs (Status, Zeitstempel, Fehler) |
 
 Alle Endpunkte (außer `/api/health`) erfordern eine Authentifizierung

@@ -33,6 +33,44 @@ def _type_str(obj) -> str:
     return "other"
 
 
+_GROUP_MARKER = "X-ADDRESSBOOKSERVER-KIND:group"
+_MEMBER_PREFIX = "urn:uuid:"
+
+
+def is_group_vcard(raw_text: str) -> bool:
+    return _GROUP_MARKER in raw_text
+
+
+def parse_group(raw_text: str, account: str, etag: str | None = None) -> dict | None:
+    try:
+        vcard = vobject.readOne(raw_text)
+    except Exception as exc:
+        logger.warning("Gruppen-vCard konnte nicht geparst werden: %s", exc)
+        return None
+
+    uid = _get(vcard, "uid")
+    if not uid:
+        logger.warning("Gruppen-vCard ohne UID übersprungen")
+        return None
+
+    member_uids = []
+    for member in vcard.contents.get("x-addressbookserver-member", []):
+        value = member.value if hasattr(member, "value") else str(member)
+        if value.startswith(_MEMBER_PREFIX):
+            member_uids.append(value[len(_MEMBER_PREFIX):])
+        else:
+            member_uids.append(value)
+
+    return {
+        "account": account,
+        "uid": uid,
+        "etag": etag,
+        "name": _scalar(_get(vcard, "fn")),
+        "raw_vcard": raw_text,
+        "member_uids": member_uids,
+    }
+
+
 def parse_vcard(raw_text: str, account: str, etag: str | None = None) -> dict | None:
     try:
         vcard = vobject.readOne(raw_text)

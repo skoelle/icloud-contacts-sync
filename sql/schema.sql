@@ -57,6 +57,30 @@ CREATE TABLE IF NOT EXISTS sync_runs (
     error_message   TEXT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- iCloud-Kontaktgruppen (vCards mit X-ADDRESSBOOKSERVER-KIND:group)
+CREATE TABLE IF NOT EXISTS `groups` (
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    account         VARCHAR(100) NOT NULL,
+    uid             VARCHAR(255) NOT NULL,
+    etag            VARCHAR(255) NULL,
+    name            VARCHAR(512) NULL,
+    raw_vcard       LONGTEXT NOT NULL,
+    created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    last_synced_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    sync_run_id     VARCHAR(64) NULL,
+    UNIQUE KEY uq_groups_account_uid (account, uid)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS group_members (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    group_id    INT NOT NULL,
+    member_uid  VARCHAR(255) NOT NULL,
+    FOREIGN KEY (group_id) REFERENCES `groups`(id) ON DELETE CASCADE,
+    UNIQUE KEY uq_group_member (group_id, member_uid),
+    KEY idx_group_members_member_uid (member_uid)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Protokoll der Geburtstags-Mails, verhindert Doppelversand am selben Tag.
 CREATE TABLE IF NOT EXISTS birthday_mail_log (
     id              INT AUTO_INCREMENT PRIMARY KEY,

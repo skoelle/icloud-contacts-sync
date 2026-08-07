@@ -21,7 +21,13 @@ from starlette.middleware.sessions import SessionMiddleware
 
 import db
 from api.auth import get_current_user, resolve_account_for_user
-from api.schemas import ContactListResponse, ContactOut, SyncRunOut
+from api.schemas import (
+    ContactListResponse,
+    ContactOut,
+    GroupDetailOut,
+    GroupListResponse,
+    SyncRunOut,
+)
 from config import Config
 from mailer import build_message, fetch_birthdays_for_date, send_message
 from utils import fmt_birthday_age, fmt_birthday_short, is_unknown_year
@@ -48,7 +54,7 @@ def _fmt_ts(dt) -> str | None:
     return dt.astimezone(Config.TIMEZONE).strftime("%d.%m.%Y %H:%M:%S")
 
 
-def _row_to_contact_out(row: dict) -> dict:
+def _row_to_contact_out(row: dict, group_names: list[str] | None = None) -> dict:
     row = dict(row)
     for field in ["emails", "phones", "addresses", "urls", "social_profiles", "categories"]:
         raw = row.get(field)
@@ -56,6 +62,7 @@ def _row_to_contact_out(row: dict) -> dict:
     if not row.get("full_name"):
         row["full_name"] = db._build_full_name(row)
     row["updated_at"] = _fmt_ts(row["updated_at"])
+    row["groups"] = group_names if group_names is not None else []
     return row
 
 
@@ -133,9 +140,13 @@ def get_contact(contact_id: int, current_user: str = Depends(get_current_user)):
             )
             row = cur.fetchone()
 
-    if not row:
-        return {}
-    return _row_to_contact_out(row)
+        if not row:
+            return {}
+
+        groups = db.get_groups_for_contact(conn, row["account"], row["uid"])
+        group_names = [g["name"] for g in groups if g.get("name")]
+
+    return _row_to_contact_out(row, group_names=group_names)
 
 
 @app.get("/api/contacts/birthdays/today", response_model=list[ContactOut])
@@ -200,6 +211,109 @@ def list_sync_runs(current_user: str = Depends(get_current_user)):
         r["started_at"] = _fmt_ts(r["started_at"])
         r["finished_at"] = _fmt_ts(r["finished_at"])
     return rows
+
+
+@app.get("/api/groups", response_model=GroupListResponse)
+def list_groups(
+    limit: int = Query(default=50, le=200),
+    offset: int = Query(default=0, ge=0),
+    current_user: str = Depends(get_current_user),
+):
+    account_name, _ = resolve_account_for_user(current_user)
+
+    with db.get_connection() as conn:
+        where_clause, params = _account_filter_clause(account_name)
+        with conn.cursor() as cur:
+            cur.execute(f"SELECT COUNT(*) AS total FROM `groups` {where_clause}", params)
+            total = cur.fetchone()["total"]
+
+            cur.execute(
+                f"""SELECT g.id, g.account, g.uid, g.name, g.updated_at,
+                           (SELECT COUNT(*) FROM group_members gm WHERE gm.group_id = g.id) AS member_count
+                    FROM `groups` g {where_clause}
+                    ORDER BY g.name
+                    LIMIT %s OFFSET %s""",
+                params + [limit, offset],
+            )
+            rows = cur.fetchall()
+
+    for r in rows:
+        r["updated_at"] = _fmt_ts(r["updated_at"])
+    return {"total": total, "items": rows}
+
+
+@app.get("/api/groups/{group_id}", response_model=GroupDetailOut)
+def get_group(group_id: int, current_user: str = Depends(get_current_user)):
+    account_name, _ = resolve_account_for_user(current_user)
+
+    with db.get_connection() as conn:
+        where_clause, params = _account_filter_clause(account_name)
+        id_clause = "AND g.id = %s" if where_clause else "WHERE g.id = %s"
+        with conn.cursor() as cur:
+            cur.execute(
+                f"""SELECT g.id, g.account, g.uid, g.name, g.updated_at,
+                           (SELECT COUNT(*) FROM group_members gm WHERE gm.group_id = g.id) AS member_count
+                    FROM `groups` g {where_clause} {id_clause}""",
+                params + [group_id],
+            )
+            group_row = cur.fetchone()
+
+            if not group_row:
+                return {}
+
+            cur.execute(
+                """SELECT gm.member_uid, c.id, c.full_name, c.given_name, c.family_name
+                   FROM group_members gm
+                   JOIN `groups` g ON g.id = gm.group_id
+                   LEFT JOIN contacts c ON c.account = g.account AND c.uid = gm.member_uid
+                   WHERE g.id = %s""",
+                (group_id,),
+            )
+            members = cur.fetchall()
+
+    for m in members:
+        if not m.get("full_name"):
+            m["full_name"] = db._build_full_name(m) if any(m.get(k) for k in ("given_name", "family_name")) else None
+
+    group_row["updated_at"] = _fmt_ts(group_row["updated_at"])
+    group_row["members"] = [
+        {"member_uid": m["member_uid"], "full_name": m["full_name"], "id": m["id"]}
+        for m in members
+    ]
+    return group_row
+
+
+@app.get("/api/groups/{group_id}/members")
+def get_group_members(group_id: int, current_user: str = Depends(get_current_user)):
+    account_name, _ = resolve_account_for_user(current_user)
+
+    with db.get_connection() as conn:
+        where_clause, params = _account_filter_clause(account_name)
+        with conn.cursor() as cur:
+            cur.execute(
+                f"""SELECT g.id, g.account FROM `groups` g {where_clause}
+                    {"AND" if where_clause else "WHERE"} g.id = %s""",
+                params + [group_id],
+            )
+            group = cur.fetchone()
+            if not group:
+                return {}
+
+            cur.execute(
+                """SELECT gm.member_uid, c.id, c.full_name, c.given_name, c.family_name,
+                          c.organization, c.birthday, c.photo_url
+                   FROM group_members gm
+                   JOIN `groups` g ON g.id = gm.group_id
+                   LEFT JOIN contacts c ON c.account = g.account AND c.uid = gm.member_uid
+                   WHERE gm.group_id = %s""",
+                (group_id,),
+            )
+            rows = cur.fetchall()
+
+    for r in rows:
+        if not r.get("full_name"):
+            r["full_name"] = db._build_full_name(r) if any(r.get(k) for k in ("given_name", "family_name")) else None
+    return {"group_id": group_id, "members": rows}
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -462,11 +576,14 @@ def web_contact(
             )
             row = cur.fetchone()
 
-    if not row:
-        from fastapi.responses import RedirectResponse
-        return RedirectResponse(url="/search", status_code=303)
+        if not row:
+            from fastapi.responses import RedirectResponse
+            return RedirectResponse(url="/search", status_code=303)
 
-    contact = _row_to_contact_out(row)
+        groups = db.get_groups_for_contact(conn, row["account"], row["uid"])
+        group_names = [g["name"] for g in groups if g.get("name")]
+
+    contact = _row_to_contact_out(row, group_names=group_names)
 
     homecity = ""
     workcity = ""

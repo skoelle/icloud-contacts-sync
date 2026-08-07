@@ -92,6 +92,11 @@ Siehe `sql/schema.sql`. Wichtigste Änderungen gegenüber v1:
 - Neue Tabelle `birthday_mail_log`: ein Datensatz pro Tag, an dem
   erfolgreich eine Geburtstagsmail versendet wurde, verhindert
   Doppelversand bei mehrfachem Container-Neustart am selben Tag.
+- Neue Tabellen `groups` und `group_members`: Speichert
+  iCloud-Kontaktgruppen (vCards mit `X-ADDRESSBOOKSERVER-KIND:group`)
+  und deren Mitgliedschaften. Gruppen werden beim Sync erkannt und
+  nicht als Kontakte in die `contacts`-Tabelle geschrieben.
+  `group_members` referenziert `groups(id)` mit `ON DELETE CASCADE`.
 
 ## 6. Geburtstags-Mailer
 
@@ -247,10 +252,13 @@ geteilt wird. Getrennt ist nur die **Rolle**, in der der Container läuft.
 | `GET /contacts/{id}` | HTML-Detailseite eines einzelnen Kontakts (Jinja2-Template) |
 | `GET /api/health` | Health-Check ohne Auth-Anforderung |
 | `GET /api/contacts` | Kontaktliste, Filter `q` (Freitext), Pagination `limit`/`offset` |
-| `GET /api/contacts/{id}` | Einzelner Kontakt (JSON) |
+| `GET /api/contacts/{id}` | Einzelner Kontakt (JSON), inklusive `groups`-Feld mit zugehörigen Gruppennamen |
 | `GET /api/contacts/count` | Anzahl der Kontakte des zugeordneten Accounts |
 | `GET /api/contacts/birthdays/today` | Heutige Geburtstage (kontospezifisch bzw. global für Admins) |
 | `GET /api/contacts/birthdays/upcoming` | Geburtstage der nächsten N Tage (Parameter `days`, Default 7) |
+| `GET /api/groups` | Gruppenliste mit `member_count`, Pagination `limit`/`offset` |
+| `GET /api/groups/{id}` | Einzelne Gruppe mit aufgelösten Members (Name + UID) |
+| `GET /api/groups/{id}/members` | Nur Members einer Gruppe (Kontaktdaten aufgelöst) |
 | `GET /api/sync-runs` | Sync-Historie (kontospezifisch bzw. global für Admins) |
 
 ### 12.5 Netzwerkkontext

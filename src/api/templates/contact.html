@@ -422,6 +422,17 @@
                 </div>
                 {% endif %}
 
+                {% if contact.groups %}
+                <div class="section">
+                    <div class="section-title">Gruppen</div>
+                    <div class="tags">
+                        {% for group_name in contact.groups %}
+                        <span class="tag">{{ group_name }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
                 {% if contact.notes %}
                 <div class="section">
                     <div class="section-title">Notizen</div>
