@@ -18,8 +18,7 @@ logging.basicConfig(level=Config.LOG_LEVEL, format="%(asctime)s [%(levelname)s] 
 logger = logging.getLogger("mailer")
 
 
-def fetch_todays_birthdays(conn) -> list[dict]:
-    today = date.today()
+def fetch_birthdays_for_date(conn, target_date: date) -> list[dict]:
     with conn.cursor() as cur:
         cur.execute(
             """SELECT id, account, full_name, birthday, organization, photo_url
@@ -28,9 +27,13 @@ def fetch_todays_birthdays(conn) -> list[dict]:
                  AND MONTH(birthday) = %s
                  AND DAY(birthday) = %s
                ORDER BY full_name""",
-            (today.month, today.day),
+            (target_date.month, target_date.day),
         )
         return cur.fetchall()
+
+
+def fetch_todays_birthdays(conn) -> list[dict]:
+    return fetch_birthdays_for_date(conn, date.today())
 
 
 def already_sent_today(conn) -> bool:
@@ -50,8 +53,8 @@ def log_sent(conn, count: int):
     conn.commit()
 
 
-def build_message(birthdays: list[dict]) -> EmailMessage:
-    today = date.today()
+def build_message(birthdays: list[dict], target_date: date | None = None) -> EmailMessage:
+    today = target_date or date.today()
     msg = EmailMessage()
     msg["From"] = Config.MAIL_FROM
     msg["To"] = Config.MAIL_TO

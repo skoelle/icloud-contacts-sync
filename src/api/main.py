@@ -23,6 +23,7 @@ import db
 from api.auth import get_current_user, resolve_account_for_user
 from api.schemas import ContactListResponse, ContactOut, SyncRunOut
 from config import Config
+from mailer import build_message, fetch_birthdays_for_date, send_message
 
 logging.basicConfig(level=Config.LOG_LEVEL, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("api")
@@ -281,6 +282,59 @@ def admin_toggle(
     show_all = request.session.get("show_all", False)
     request.session["show_all"] = not show_all
     return RedirectResponse(url="/admin", status_code=303)
+
+
+@app.post("/admin/test-send")
+def admin_test_send(
+    request: Request,
+    current_user: str = Depends(get_current_user),
+):
+    _, is_admin, _ = _resolve_effective_account(request, current_user)
+    if not is_admin:
+        return RedirectResponse(url="/", status_code=303)
+
+    target = date(2026, 8, 6)
+    try:
+        Config.validate_mailer()
+    except RuntimeError as exc:
+        return templates.TemplateResponse(
+            "admin.html",
+            {
+                "request": request,
+                "current_user": current_user,
+                "show_all": request.session.get("show_all", False),
+                "error": str(exc),
+            },
+            status_code=400,
+        )
+
+    with db.get_connection() as conn:
+        birthdays = fetch_birthdays_for_date(conn, target)
+
+    msg = build_message(birthdays, target_date=target)
+    try:
+        send_message(msg)
+    except Exception as exc:
+        return templates.TemplateResponse(
+            "admin.html",
+            {
+                "request": request,
+                "current_user": current_user,
+                "show_all": request.session.get("show_all", False),
+                "error": f"Versand fehlgeschlagen: {exc}",
+            },
+            status_code=500,
+        )
+
+    return templates.TemplateResponse(
+        "admin.html",
+        {
+            "request": request,
+            "current_user": current_user,
+            "show_all": request.session.get("show_all", False),
+            "success": f"Test-Mail für {target.strftime('%d.%m.%Y')} gesendet ({len(birthdays)} Kontakte).",
+        },
+    )
 
 
 @app.get("/search/special", response_class=HTMLResponse)
