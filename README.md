@@ -162,9 +162,23 @@ Gruppen sind über die API abrufbar:
 - `GET /api/groups/{id}/members` — Nur Members einer Gruppe
 - `GET /api/contacts/{id}` — Enthält `groups`-Feld mit Gruppennamen
 
-Wird ein Kontakt gelöscht, wird die Mitgliedschaft in Gruppen
-automatisch entfernt (`ON DELETE CASCADE`). Die Gruppe selbst bleibt
-erhalten.
+Wird eine Gruppe gelöscht, werden zugehörige Memberschaften automatisch
+entfernt (`ON DELETE CASCADE`). Gelöschte Mitglied-Kontakte verbleiben
+als Member-Eintrag in der Gruppe (ohne aufgelöste Kontaktdaten). Beim
+nächsten vollen Re-Sync werden tote Memberschaften bereinigt.
+
+### Migration bei erstem Deploy
+
+Bei Bestands-DBs lagen Gruppen bisher als normale Kontakte in der
+`contacts`-Tabelle. Nach dem Deploy müssen diese einmalig bereinigt
+werden:
+
+1. Sync-Container stoppen: `docker compose stop icloud-contacts-sync`
+2. Sync-State zurücksetzen: `DELETE FROM sync_state;` (erzwingt vollen Re-Sync)
+3. Container neu starten: `docker compose start icloud-contacts-sync`
+
+Beim nächsten Sync-Lauf werden alle vCards neu klassifiziziert —
+Gruppen landen in `groups`, Kontakte bleiben in `contacts`.
 
 ## 11. Web-Ansicht und API (interner Zugriff über Authelia)
 

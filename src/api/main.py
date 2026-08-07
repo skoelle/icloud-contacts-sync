@@ -215,12 +215,11 @@ def list_sync_runs(current_user: str = Depends(get_current_user)):
 
 @app.get("/api/groups", response_model=GroupListResponse)
 def list_groups(
-    request: Request,
     limit: int = Query(default=50, le=200),
     offset: int = Query(default=0, ge=0),
     current_user: str = Depends(get_current_user),
 ):
-    account_name, is_admin = resolve_account_for_user(current_user)
+    account_name, _ = resolve_account_for_user(current_user)
 
     with db.get_connection() as conn:
         where_clause, params = _account_filter_clause(account_name)
@@ -245,7 +244,7 @@ def list_groups(
 
 @app.get("/api/groups/{group_id}", response_model=GroupDetailOut)
 def get_group(group_id: int, current_user: str = Depends(get_current_user)):
-    account_name, is_admin = resolve_account_for_user(current_user)
+    account_name, _ = resolve_account_for_user(current_user)
 
     with db.get_connection() as conn:
         where_clause, params = _account_filter_clause(account_name)
@@ -265,9 +264,9 @@ def get_group(group_id: int, current_user: str = Depends(get_current_user)):
             cur.execute(
                 """SELECT gm.member_uid, c.id, c.full_name, c.given_name, c.family_name
                    FROM group_members gm
+                   JOIN `groups` g ON g.id = gm.group_id
                    LEFT JOIN contacts c ON c.account = g.account AND c.uid = gm.member_uid
-                   CROSS JOIN `groups` g
-                   WHERE g.id = %s AND gm.group_id = g.id""",
+                   WHERE g.id = %s""",
                 (group_id,),
             )
             members = cur.fetchall()
@@ -286,24 +285,26 @@ def get_group(group_id: int, current_user: str = Depends(get_current_user)):
 
 @app.get("/api/groups/{group_id}/members")
 def get_group_members(group_id: int, current_user: str = Depends(get_current_user)):
-    account_name, is_admin = resolve_account_for_user(current_user)
+    account_name, _ = resolve_account_for_user(current_user)
 
     with db.get_connection() as conn:
         where_clause, params = _account_filter_clause(account_name)
         with conn.cursor() as cur:
             cur.execute(
-                f"""SELECT g.id FROM `groups` g {where_clause}
+                f"""SELECT g.id, g.account FROM `groups` g {where_clause}
                     {"AND" if where_clause else "WHERE"} g.id = %s""",
                 params + [group_id],
             )
-            if not cur.fetchone():
+            group = cur.fetchone()
+            if not group:
                 return {}
 
             cur.execute(
                 """SELECT gm.member_uid, c.id, c.full_name, c.given_name, c.family_name,
                           c.organization, c.birthday, c.photo_url
                    FROM group_members gm
-                   LEFT JOIN contacts c ON c.uid = gm.member_uid
+                   JOIN `groups` g ON g.id = gm.group_id
+                   LEFT JOIN contacts c ON c.account = g.account AND c.uid = gm.member_uid
                    WHERE gm.group_id = %s""",
                 (group_id,),
             )

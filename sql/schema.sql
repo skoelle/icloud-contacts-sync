@@ -77,7 +77,8 @@ CREATE TABLE IF NOT EXISTS group_members (
     group_id    INT NOT NULL,
     member_uid  VARCHAR(255) NOT NULL,
     FOREIGN KEY (group_id) REFERENCES `groups`(id) ON DELETE CASCADE,
-    UNIQUE KEY uq_group_member (group_id, member_uid)
+    UNIQUE KEY uq_group_member (group_id, member_uid),
+    KEY idx_group_members_member_uid (member_uid)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Protokoll der Geburtstags-Mails, verhindert Doppelversand am selben Tag.

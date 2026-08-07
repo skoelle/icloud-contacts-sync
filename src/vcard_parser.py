@@ -61,10 +61,6 @@ def parse_group(raw_text: str, account: str, etag: str | None = None) -> dict | 
         else:
             member_uids.append(value)
 
-    if not member_uids:
-        logger.debug("Gruppe %s hat keine Members, überspringe", uid)
-        return None
-
     return {
         "account": account,
         "uid": uid,
