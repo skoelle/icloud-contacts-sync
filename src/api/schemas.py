@@ -10,8 +10,11 @@ class ContactOut(BaseModel):
     account: str
     uid: str
     full_name: str | None
+    prefix: str | None
     given_name: str | None
+    middle_name: str | None
     family_name: str | None
+    suffix: str | None
     organization: str | None
     job_title: str | None
     birthday: date | None

@@ -133,7 +133,7 @@ def get_contact(contact_id: int, current_user: str = Depends(get_current_user)):
         id_clause = "AND id = %s" if where_clause else "WHERE id = %s"
         with conn.cursor() as cur:
             cur.execute(
-                f"""SELECT id, account, uid, full_name, given_name, family_name, organization,
+                f"""SELECT id, account, uid, full_name, prefix, given_name, middle_name, family_name, suffix, organization,
                            job_title, birthday, notes, photo_url, emails, phones, addresses, urls, social_profiles, categories, updated_at
                     FROM contacts {where_clause} {id_clause}""",
                 params + [contact_id],
@@ -624,7 +624,7 @@ def web_contact(
         id_clause = "AND id = %s" if where_clause else "WHERE id = %s"
         with conn.cursor() as cur:
             cur.execute(
-                f"""SELECT id, account, uid, full_name, given_name, family_name, organization,
+                f"""SELECT id, account, uid, full_name, prefix, given_name, middle_name, family_name, suffix, organization,
                            job_title, birthday, notes, photo_url, emails, phones, addresses, urls, social_profiles, categories, updated_at
                     FROM contacts {where_clause} {id_clause}""",
                 params + [contact_id],
