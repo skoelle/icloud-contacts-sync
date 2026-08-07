@@ -5,12 +5,12 @@ import logging
 import os
 import uuid
 from contextlib import contextmanager
-from datetime import date, datetime
+from datetime import datetime, timezone
 
 import pymysql
 from pymysql.cursors import DictCursor
 
-from config import Config
+from config import TIMEZONE, Config
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +95,7 @@ def finish_sync_run(conn, run_id: str, status: str, upserted: int = None, delete
 def upsert_contacts(conn, contacts: list[dict], run_id: str):
     if not contacts:
         return
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
     with conn.cursor() as cur:
         for c in contacts:
             c["sync_run_id"] = run_id
@@ -219,7 +219,7 @@ def search_contacts_without_social(conn, account: str | None) -> list[dict]:
 
 def get_upcoming_birthdays(conn, account: str | None, days: int = 7) -> list[dict]:
     where_clause, params = _account_filter_clause(account)
-    today = date.today()
+    today = datetime.now(TIMEZONE).date()
     with conn.cursor() as cur:
         cur.execute(
             f"""SELECT id, full_name, given_name, middle_name, family_name,

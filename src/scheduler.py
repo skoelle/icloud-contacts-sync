@@ -19,6 +19,7 @@ import time
 from datetime import datetime, timedelta
 
 import db
+from config import TIMEZONE
 
 logging.basicConfig(
     level=os.environ.get("LOG_LEVEL", "INFO"),
@@ -62,7 +63,7 @@ def run_sync():
     run_script("Sync", "/app/sync.py")
     try:
         with open("/tmp/last_sync_ok", "w") as f:
-            f.write(datetime.now().isoformat())
+            f.write(datetime.now(TIMEZONE).isoformat())
     except OSError:
         pass
 
@@ -74,7 +75,7 @@ def run_mailer():
 
 
 def next_run_time(hour: int) -> datetime:
-    now = datetime.now()
+    now = datetime.now(TIMEZONE)
     target = now.replace(hour=hour, minute=0, second=0, microsecond=0)
     if target <= now:
         target += timedelta(days=1)
@@ -103,11 +104,11 @@ def main():
     logger.info("Starte ersten Sync-Lauf...")
     run_sync()
 
-    last_sync = datetime.now()
+    last_sync = datetime.now(TIMEZONE)
     next_mailer = next_run_time(MAIL_SEND_HOUR)
 
     while not _shutdown:
-        now = datetime.now()
+        now = datetime.now(TIMEZONE)
 
         if now >= last_sync + timedelta(minutes=SYNC_INTERVAL_MINUTES):
             run_sync()

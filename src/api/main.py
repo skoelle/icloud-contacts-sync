@@ -10,7 +10,7 @@ Benutzernamen im Remote-User-Header mitschickt."""
 import json
 import logging
 import secrets
-from datetime import date
+from datetime import date, datetime
 from urllib.parse import quote_plus
 
 from fastapi import Depends, FastAPI, Query, Request
@@ -22,7 +22,7 @@ from starlette.middleware.sessions import SessionMiddleware
 import db
 from api.auth import get_current_user, resolve_account_for_user
 from api.schemas import ContactListResponse, ContactOut, SyncRunOut
-from config import Config
+from config import TIMEZONE, Config
 from mailer import build_message, fetch_birthdays_for_date, send_message
 
 logging.basicConfig(level=Config.LOG_LEVEL, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -35,6 +35,15 @@ templates = Jinja2Templates(directory="api/templates")
 templates.env.filters["urlquote"] = lambda s: quote_plus(s or "")
 
 
+def _fmt_ts(dt) -> str | None:
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        from datetime import timezone
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(TIMEZONE).strftime("%d.%m.%Y %H:%M:%S")
+
+
 def _row_to_contact_out(row: dict) -> dict:
     row = dict(row)
     for field in ["emails", "phones", "addresses", "urls", "social_profiles", "categories"]:
@@ -42,7 +51,7 @@ def _row_to_contact_out(row: dict) -> dict:
         row[field] = json.loads(raw) if raw else []
     if not row.get("full_name"):
         row["full_name"] = db._build_full_name(row)
-    row["updated_at"] = str(row["updated_at"])
+    row["updated_at"] = _fmt_ts(row["updated_at"])
     return row
 
 
@@ -128,7 +137,7 @@ def get_contact(contact_id: int, current_user: str = Depends(get_current_user)):
 @app.get("/api/contacts/birthdays/today", response_model=list[ContactOut])
 def birthdays_today(current_user: str = Depends(get_current_user)):
     account_name, is_admin = resolve_account_for_user(current_user)
-    today = date.today()
+    today = datetime.now(TIMEZONE).date()
 
     with db.get_connection() as conn:
         where_clause, params = _account_filter_clause(account_name)
@@ -184,8 +193,8 @@ def list_sync_runs(current_user: str = Depends(get_current_user)):
             rows = cur.fetchall()
 
     for r in rows:
-        r["started_at"] = str(r["started_at"])
-        r["finished_at"] = str(r["finished_at"]) if r["finished_at"] else None
+        r["started_at"] = _fmt_ts(r["started_at"])
+        r["finished_at"] = _fmt_ts(r["finished_at"])
     return rows
 
 
@@ -224,11 +233,11 @@ def web_dashboard(
             last_sync_with_changes = cur.fetchone()
 
     if last_sync:
-        last_sync["started_at"] = str(last_sync["started_at"])
-        last_sync["finished_at"] = str(last_sync["finished_at"]) if last_sync["finished_at"] else None
+        last_sync["started_at"] = _fmt_ts(last_sync["started_at"])
+        last_sync["finished_at"] = _fmt_ts(last_sync["finished_at"])
 
     if last_sync_with_changes:
-        last_sync_with_changes["started_at"] = str(last_sync_with_changes["started_at"])
+        last_sync_with_changes["started_at"] = _fmt_ts(last_sync_with_changes["started_at"])
         if last_sync and last_sync["started_at"] == last_sync_with_changes["started_at"]:
             last_sync_with_changes = None
 
@@ -244,8 +253,8 @@ def web_dashboard(
             "upcoming_birthdays": upcoming_birthdays,
             "last_sync": last_sync,
             "last_sync_with_changes": last_sync_with_changes,
-            "current_year": date.today().year,
-            "today": date.today(),
+            "current_year": datetime.now(TIMEZONE).date().year,
+            "today": datetime.now(TIMEZONE).date(),
         },
     )
 

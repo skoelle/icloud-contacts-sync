@@ -8,11 +8,11 @@ die Tabelle birthday_mail_log."""
 import logging
 import smtplib
 import sys
-from datetime import date
+from datetime import date, datetime
 from email.message import EmailMessage
 
 import db
-from config import Config
+from config import TIMEZONE, Config
 
 logging.basicConfig(level=Config.LOG_LEVEL, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("mailer")
@@ -33,18 +33,18 @@ def fetch_birthdays_for_date(conn, target_date: date) -> list[dict]:
 
 
 def fetch_todays_birthdays(conn) -> list[dict]:
-    return fetch_birthdays_for_date(conn, date.today())
+    return fetch_birthdays_for_date(conn, datetime.now(TIMEZONE).date())
 
 
 def already_sent_today(conn) -> bool:
-    today = date.today()
+    today = datetime.now(TIMEZONE).date()
     with conn.cursor() as cur:
         cur.execute("SELECT 1 FROM birthday_mail_log WHERE sent_date = %s", (today,))
         return cur.fetchone() is not None
 
 
 def log_sent(conn, count: int):
-    today = date.today()
+    today = datetime.now(TIMEZONE).date()
     with conn.cursor() as cur:
         cur.execute(
             "INSERT INTO birthday_mail_log (sent_date, contacts_count) VALUES (%s, %s)",
@@ -54,7 +54,7 @@ def log_sent(conn, count: int):
 
 
 def build_message(birthdays: list[dict], target_date: date | None = None) -> EmailMessage:
-    today = target_date or date.today()
+    today = target_date or datetime.now(TIMEZONE).date()
     msg = EmailMessage()
     msg["From"] = Config.MAIL_FROM
     msg["To"] = Config.MAIL_TO

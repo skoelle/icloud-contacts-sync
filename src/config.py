@@ -2,6 +2,7 @@
 # Licensed under the MIT License. See LICENSE file in project root for details.
 import json
 import os
+from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
 
@@ -28,6 +29,8 @@ class Config:
     MARIADB_PASSWORD = os.environ.get("MARIADB_PASSWORD", "")
 
     ACCOUNTS_CONFIG_PATH = os.environ.get("ACCOUNTS_CONFIG_PATH", "/app/config/accounts.json")
+
+    TIMEZONE = ZoneInfo(os.environ.get("TIMEZONE", "Europe/Berlin"))
 
     LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
     SOURCE_NAME = "icloud"

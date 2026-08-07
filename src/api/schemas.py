@@ -1,6 +1,7 @@
 # Copyright (c) 2026 Stefan Koelle (https://stefankoelle.de)
 # Licensed under the MIT License. See LICENSE file in project root for details.
 from datetime import date
+
 from pydantic import BaseModel
 
 
