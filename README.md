@@ -139,6 +139,9 @@ python3 mailer.py
   nach `ghcr.io/<owner>/icloud-contacts-sync`.
 - Ein separater Cleanup-Job behält jeweils nur die letzten 4 erfolgreich
   gebauten, getaggten Images.
+- Der Lint-Job nutzt `ruff==0.15.22` (gepint) mit der alten Default-Auswahl
+  `E4,E7,E9,F` (siehe `pyproject.toml`), so bleiben die Ergebnisse
+  reproduzierbar und unabhängig von neuen Ruff-Defaults.
 - Details siehe SPEC.md, Abschnitt 9.
 
 ## Bekannte Grenzen und geplante Erweiterungen

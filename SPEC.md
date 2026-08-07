@@ -170,7 +170,8 @@ Unverändert gegenüber v1:
 - Nachgelagerter `cleanup`-Job über `dataaxiom/ghcr-cleanup-action`,
   behält die letzten 4 getaggten Images, löscht ungetaggte Artefakte,
   `latest` von der Zählung ausgenommen.
-- `lint.yml`: Ruff-Check auf Pull Requests.
+- `lint.yml`: Ruff-Check (pinned `ruff==0.15.22`, alte Default-Auswahl
+  `E4,E7,E9,F` via `pyproject.toml`) auf Pull Requests.
 
 ## 10. Betrieb auf der Docker-Host
 
