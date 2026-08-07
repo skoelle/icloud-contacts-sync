@@ -125,7 +125,7 @@ def build_message(birthdays: list[dict], target_date: date | None = None) -> Ema
     if Config.WEB_URL:
         link_html = f"""
           <tr>
-            <td style="padding:24px 0 0 0;" align="center">
+            <td style="padding:24px 0 16px 0;" align="center">
               <table cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="background:#0066cc;border-radius:4px;">
