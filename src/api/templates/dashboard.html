@@ -367,7 +367,7 @@
                             <div class="birthday-organization">{{ b.organization }}</div>
                             {% endif %}
                             <div class="birthday-date">
-                                {{ b.birthday|fmt_birthday }}{% if b.birthday|has_year %} · {{ b.birthday|fmt_age(current_year) }} Jahre{% endif %}
+                                {{ b.birthday|fmt_birthday }}{% if b.birthday|has_year %}<span style="white-space:nowrap;"> · {{ b.birthday|fmt_age(current_year) }} Jahre</span>{% endif %}
                             </div>
                         </div>
                         {% if b.photo_url %}
