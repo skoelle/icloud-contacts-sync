@@ -22,7 +22,7 @@ from starlette.middleware.sessions import SessionMiddleware
 import db
 from api.auth import get_current_user, resolve_account_for_user
 from api.schemas import ContactListResponse, ContactOut, SyncRunOut
-from config import TIMEZONE, Config
+from config import Config
 from mailer import build_message, fetch_birthdays_for_date, send_message
 
 logging.basicConfig(level=Config.LOG_LEVEL, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -41,7 +41,7 @@ def _fmt_ts(dt) -> str | None:
     if dt.tzinfo is None:
         from datetime import timezone
         dt = dt.replace(tzinfo=timezone.utc)
-    return dt.astimezone(TIMEZONE).strftime("%d.%m.%Y %H:%M:%S")
+    return dt.astimezone(Config.TIMEZONE).strftime("%d.%m.%Y %H:%M:%S")
 
 
 def _row_to_contact_out(row: dict) -> dict:
@@ -137,7 +137,7 @@ def get_contact(contact_id: int, current_user: str = Depends(get_current_user)):
 @app.get("/api/contacts/birthdays/today", response_model=list[ContactOut])
 def birthdays_today(current_user: str = Depends(get_current_user)):
     account_name, is_admin = resolve_account_for_user(current_user)
-    today = datetime.now(TIMEZONE).date()
+    today = datetime.now(Config.TIMEZONE).date()
 
     with db.get_connection() as conn:
         where_clause, params = _account_filter_clause(account_name)
@@ -253,8 +253,8 @@ def web_dashboard(
             "upcoming_birthdays": upcoming_birthdays,
             "last_sync": last_sync,
             "last_sync_with_changes": last_sync_with_changes,
-            "current_year": datetime.now(TIMEZONE).date().year,
-            "today": datetime.now(TIMEZONE).date(),
+            "current_year": datetime.now(Config.TIMEZONE).date().year,
+            "today": datetime.now(Config.TIMEZONE).date(),
         },
     )
 

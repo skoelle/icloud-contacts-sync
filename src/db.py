@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 import pymysql
 from pymysql.cursors import DictCursor
 
-from config import TIMEZONE, Config
+from config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -219,7 +219,7 @@ def search_contacts_without_social(conn, account: str | None) -> list[dict]:
 
 def get_upcoming_birthdays(conn, account: str | None, days: int = 7) -> list[dict]:
     where_clause, params = _account_filter_clause(account)
-    today = datetime.now(TIMEZONE).date()
+    today = datetime.now(Config.TIMEZONE).date()
     with conn.cursor() as cur:
         cur.execute(
             f"""SELECT id, full_name, given_name, middle_name, family_name,
