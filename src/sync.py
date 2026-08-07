@@ -86,6 +86,7 @@ def sync_account(conn, account, href_to_uid_cache: dict):
             else:
                 logger.warning("[%s] Konnte UID nicht aus href extrahieren: %s", account.name, href)
         db.delete_contacts_by_href_uids(conn, account.name, deleted_uids)
+        db.delete_group_members_by_uids(conn, account.name, deleted_uids)
         db.delete_groups_by_uids(conn, account.name, deleted_uids)
 
         if new_token:

@@ -163,9 +163,9 @@ Gruppen sind über die API abrufbar:
 - `GET /api/contacts/{id}` — Enthält `groups`-Feld mit Gruppennamen
 
 Wird eine Gruppe gelöscht, werden zugehörige Memberschaften automatisch
-entfernt (`ON DELETE CASCADE`). Gelöschte Mitglied-Kontakte verbleiben
-als Member-Eintrag in der Gruppe (ohne aufgelöste Kontaktdaten). Beim
-nächsten vollen Re-Sync werden tote Memberschaften bereinigt.
+entfernt (`ON DELETE CASCADE`). Wird ein Mitglied-Kontakt gelöscht,
+wird der Member-Eintrag in allen Gruppen ebenfalls entfernt (manueller
+Cleanup im Sync-Code). Die Gruppe selbst bleibt erhalten.
 
 ### Migration bei erstem Deploy
 

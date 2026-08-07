@@ -130,6 +130,20 @@ def delete_contacts_by_href_uids(conn, account: str, uids: list[str]):
     conn.commit()
 
 
+def delete_group_members_by_uids(conn, account: str, uids: list[str]):
+    if not uids:
+        return
+    with conn.cursor() as cur:
+        placeholders = ", ".join(["%s"] * len(uids))
+        cur.execute(
+            f"""DELETE gm FROM group_members gm
+                JOIN `groups` g ON g.id = gm.group_id
+                WHERE g.account = %s AND gm.member_uid IN ({placeholders})""",
+            [account] + uids,
+        )
+    conn.commit()
+
+
 def _build_full_name(row: dict) -> str | None:
     parts = [
         row.get("prefix"),
