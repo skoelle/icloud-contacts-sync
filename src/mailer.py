@@ -88,8 +88,6 @@ def build_message(birthdays: list[dict], target_date: date | None = None) -> Ema
         age = fmt_birthday_age(b["birthday"], today)
         age_str = f' <span style="white-space:nowrap;">· {age} Jahre</span>' if age is not None else ""
         contact_link = f"{Config.WEB_URL.rstrip('/')}/contacts/{b['id']}" if Config.WEB_URL else ""
-        is_today = b["birthday"].month == today.month and b["birthday"].day == today.day
-        card_bg = "#f0f0f0" if is_today else "#ffffff"
         org_html = f'<div style="font-size:14px;color:#666;margin-top:4px;">{b["organization"]}</div>' if b.get("organization") else ""
         photo_cell = ""
         if b.get("photo_url"):
@@ -107,7 +105,7 @@ def build_message(birthdays: list[dict], target_date: date | None = None) -> Ema
         cards_html += f"""
         <tr>
           <td style="padding:0 0 12px 0;">
-            <table width="100%" cellpadding="0" cellspacing="0" style="background:{card_bg};border:1px solid #e0e0e0;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f0f0;border:1px solid #e0e0e0;">
               <tr>
                 <td style="padding:16px 20px;">
                   {content_html}
@@ -148,7 +146,7 @@ def build_message(birthdays: list[dict], target_date: date | None = None) -> Ema
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;">
     <tr>
       <td align="center" style="padding:32px 16px;">
-        <table width="800" cellpadding="0" cellspacing="0" style="max-width:800px;width:100%;background:#ffffff;">
+        <table width="800" cellpadding="0" cellspacing="0" style="max-width:800px;width:100%;background:#ffffff;border:1px solid #e0e0e0;">
           <tr>
             <td style="padding:32px;">
               <h1 style="font-size:24px;font-weight:600;color:#222;margin:0;">Geburtstage heute</h1>
