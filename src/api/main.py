@@ -10,7 +10,7 @@ Benutzernamen im Remote-User-Header mitschickt."""
 import json
 import logging
 import secrets
-from datetime import date, datetime
+from datetime import datetime
 from urllib.parse import quote_plus
 
 from fastapi import Depends, FastAPI, Query, Request
@@ -424,7 +424,6 @@ def admin_test_send(
     if not is_admin:
         return RedirectResponse(url="/", status_code=303)
 
-    target = date(2026, 8, 6)
     try:
         Config.validate_mailer()
     except RuntimeError as exc:
@@ -453,9 +452,22 @@ def admin_test_send(
             status_code=400,
         )
 
-    sent_count = 0
-    errors = []
     with db.get_connection() as conn:
+        target = db.get_most_common_birthday(conn)
+        if target is None:
+            return templates.TemplateResponse(
+                "admin.html",
+                {
+                    "request": request,
+                    "current_user": current_user,
+                    "show_all": request.session.get("show_all", False),
+                    "error": "Keine Kontakte mit Geburtstag in der Datenbank",
+                },
+                status_code=400,
+            )
+
+        sent_count = 0
+        errors = []
         for account in mail_accounts:
             birthdays = fetch_todays_birthdays_for_account(conn, account.name, target)
             if not birthdays:

@@ -5,7 +5,7 @@ import logging
 import os
 import uuid
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 import pymysql
 from pymysql.cursors import DictCursor
@@ -229,6 +229,22 @@ def search_contacts_without_social(conn, account: str | None) -> list[dict]:
             params,
         )
         return cur.fetchall()
+
+
+def get_most_common_birthday(conn) -> date | None:
+    with conn.cursor() as cur:
+        cur.execute(
+            """SELECT MONTH(birthday) AS m, DAY(birthday) AS d, COUNT(*) AS cnt
+               FROM contacts
+               WHERE birthday IS NOT NULL
+               GROUP BY m, d
+               ORDER BY cnt DESC
+               LIMIT 1"""
+        )
+        row = cur.fetchone()
+    if not row:
+        return None
+    return date(datetime.now().year, row["m"], row["d"])
 
 
 def get_upcoming_birthdays(conn, account: str | None, days: int = 7) -> list[dict]:
