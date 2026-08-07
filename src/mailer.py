@@ -91,7 +91,7 @@ def build_message(birthdays: list[dict], target_date: date | None = None) -> Ema
         org_html = f'<div style="font-size:14px;color:#666;margin-top:4px;">{b["organization"]}</div>' if b.get("organization") else ""
         photo_cell = ""
         if b.get("photo_url"):
-            photo_cell = f'<td width="96" valign="top" style="padding-left:20px;"><img src="{b["photo_url"]}" alt="" width="80" height="80" style="border-radius:50%;display:block;"></td>'
+            photo_cell = f'<td width="96" valign="top" style="padding:16px 0 16px 20px;"><img src="{b["photo_url"]}" alt="" width="80" height="80" style="border-radius:50%;display:block;"></td>'
         if contact_link:
             content_html = f"""<a href="{contact_link}" style="color:#222;text-decoration:none;display:block;">
                 <div style="font-size:18px;font-weight:600;color:#222;">{b["full_name"]}</div>
