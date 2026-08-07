@@ -22,7 +22,8 @@ logger = logging.getLogger("mailer")
 def fetch_birthdays_for_date(conn, target_date: date) -> list[dict]:
     with conn.cursor() as cur:
         cur.execute(
-            """SELECT id, account, full_name, birthday, organization, photo_url
+            """SELECT id, account, full_name, given_name, middle_name, family_name,
+                     prefix, suffix, birthday, organization, photo_url
                FROM contacts
                WHERE birthday IS NOT NULL
                  AND MONTH(birthday) = %s
@@ -30,7 +31,11 @@ def fetch_birthdays_for_date(conn, target_date: date) -> list[dict]:
                ORDER BY full_name""",
             (target_date.month, target_date.day),
         )
-        return cur.fetchall()
+        rows = cur.fetchall()
+    for b in rows:
+        if not b.get("full_name"):
+            b["full_name"] = db._build_full_name(b) or "(Kein Name)"
+    return rows
 
 
 def fetch_todays_birthdays(conn) -> list[dict]:
