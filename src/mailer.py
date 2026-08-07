@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Stefan Koelle (https://stefankoelle.de)
 # Licensed under the MIT License. See LICENSE file in project root for details.
-"""Sendet eine tägliche E-Mail mit allen heutigen Geburtstagskindern aus der
-contacts-Tabelle (über alle Accounts hinweg). Wird per Cron einmal täglich
-um MAIL_SEND_HOUR aufgerufen. Verhindert Doppelversand am selben Tag über
-die Tabelle birthday_mail_log."""
+"""Sendet eine tägliche E-Mail mit Geburtstagskindern pro Account aus der
+contacts-Tabelle. Wird per Cron einmal täglich um MAIL_SEND_HOUR aufgerufen.
+Verhindert Doppelversand am selben Tag pro Account über die Tabelle
+birthday_mail_log."""
 import logging
 import smtplib
 import sys
@@ -19,17 +19,18 @@ logging.basicConfig(level=Config.LOG_LEVEL, format="%(asctime)s [%(levelname)s] 
 logger = logging.getLogger("mailer")
 
 
-def fetch_birthdays_for_date(conn, target_date: date) -> list[dict]:
+def fetch_todays_birthdays_for_account(conn, account_name: str, target_date: date) -> list[dict]:
     with conn.cursor() as cur:
         cur.execute(
             """SELECT id, account, full_name, given_name, middle_name, family_name,
                      prefix, suffix, birthday, organization, photo_url
                FROM contacts
-               WHERE birthday IS NOT NULL
+               WHERE account = %s
+                 AND birthday IS NOT NULL
                  AND MONTH(birthday) = %s
                  AND DAY(birthday) = %s
                ORDER BY given_name, family_name, full_name""",
-            (target_date.month, target_date.day),
+            (account_name, target_date.month, target_date.day),
         )
         rows = cur.fetchall()
     for b in rows:
@@ -38,32 +39,30 @@ def fetch_birthdays_for_date(conn, target_date: date) -> list[dict]:
     return rows
 
 
-def fetch_todays_birthdays(conn) -> list[dict]:
-    return fetch_birthdays_for_date(conn, datetime.now(Config.TIMEZONE).date())
-
-
-def already_sent_today(conn) -> bool:
-    today = datetime.now(Config.TIMEZONE).date()
-    with conn.cursor() as cur:
-        cur.execute("SELECT 1 FROM birthday_mail_log WHERE sent_date = %s", (today,))
-        return cur.fetchone() is not None
-
-
-def log_sent(conn, count: int):
+def already_sent_today(conn, account: str) -> bool:
     today = datetime.now(Config.TIMEZONE).date()
     with conn.cursor() as cur:
         cur.execute(
-            "INSERT INTO birthday_mail_log (sent_date, contacts_count) VALUES (%s, %s)",
-            (today, count),
+            "SELECT 1 FROM birthday_mail_log WHERE account = %s AND sent_date = %s",
+            (account, today),
+        )
+        return cur.fetchone() is not None
+
+
+def log_sent(conn, account: str, count: int):
+    today = datetime.now(Config.TIMEZONE).date()
+    with conn.cursor() as cur:
+        cur.execute(
+            "INSERT INTO birthday_mail_log (account, sent_date, contacts_count) VALUES (%s, %s, %s)",
+            (account, today, count),
         )
     conn.commit()
 
 
-def build_message(birthdays: list[dict], target_date: date | None = None) -> EmailMessage:
+def build_message(account_name: str, birthdays: list[dict], target_date: date | None = None) -> EmailMessage:
     today = target_date or datetime.now(Config.TIMEZONE).date()
     msg = EmailMessage()
     msg["From"] = Config.MAIL_FROM
-    msg["To"] = Config.MAIL_TO
 
     if not birthdays:
         msg["Subject"] = f"Geburtstage heute ({today.isoformat()}): keine"
@@ -199,26 +198,42 @@ def main() -> int:
         logger.error(str(exc))
         return 1
 
+    accounts = Config.load_accounts()
+    mail_accounts = [a for a in accounts if a.birthday_mail_to]
+    if not mail_accounts:
+        logger.info("Keine Accounts mit birthday_mail_to konfiguriert, überspringe Lauf")
+        return 0
+
+    today = datetime.now(Config.TIMEZONE).date()
+    sent_count = 0
+    errors = 0
+
     with db.get_connection() as conn:
-        if already_sent_today(conn):
-            logger.info("Geburtstagsmail wurde heute bereits versendet, überspringe")
-            return 0
+        for account in mail_accounts:
+            if already_sent_today(conn, account.name):
+                logger.info("Geburtstagsmail für Account '%s' wurde heute bereits versendet, überspringe", account.name)
+                continue
 
-        birthdays = fetch_todays_birthdays(conn)
-        if not birthdays:
-            logger.info("Keine Geburtstage heute, überspringe Mailversand")
-            return 0
+            birthdays = fetch_todays_birthdays_for_account(conn, account.name, today)
+            if not birthdays:
+                logger.info("Keine Geburtstage heute für Account '%s', überspringe", account.name)
+                continue
 
-        msg = build_message(birthdays)
-        try:
-            send_message(msg)
-        except Exception:
-            logger.exception("Versand der Geburtstagsmail fehlgeschlagen")
-            return 1
+            msg = build_message(account.name, birthdays, today)
+            msg["To"] = account.birthday_mail_to
+            try:
+                send_message(msg)
+            except Exception:
+                logger.exception("Versand der Geburtstagsmail für Account '%s' fehlgeschlagen", account.name)
+                errors += 1
+                continue
 
-        log_sent(conn, len(birthdays))
-        logger.info("Geburtstagsmail versendet: %d Kontakte", len(birthdays))
-    return 0
+            log_sent(conn, account.name, len(birthdays))
+            sent_count += 1
+            logger.info("Geburtstagsmail versendet für Account '%s': %d Kontakte", account.name, len(birthdays))
+
+    logger.info("Mailer-Lauf abgeschlossen: %d Mails versendet, %d Fehler", sent_count, errors)
+    return 1 if errors > 0 else 0
 
 
 if __name__ == "__main__":

@@ -39,8 +39,8 @@ außerhalb des Apple-Ökosystems.
   ```json
   {
     "accounts": [
-      { "name": "markus", "apple_email": "markus@icloud.com", "apple_app_password": "xxxx-xxxx-xxxx-xxxx", "authelia_user": "mmustermann", "healthcheck_url": "https://healthchecks.example.de/ping/abc123" },
-      { "name": "partner", "apple_email": "partner@icloud.com", "apple_app_password": "yyyy-yyyy-yyyy-yyyy", "authelia_user": "pmustermann" }
+      { "name": "markus", "apple_email": "markus@icloud.com", "apple_app_password": "xxxx-xxxx-xxxx-xxxx", "authelia_user": "mmustermann", "birthday_mail_to": "markus@example.de", "healthcheck_url": "https://healthchecks.example.de/ping/abc123" },
+      { "name": "partner", "apple_email": "partner@icloud.com", "apple_app_password": "yyyy-yyyy-yyyy-yyyy", "authelia_user": "pmustermann", "birthday_mail_to": "partner@example.de" }
     ],
     "admins": ["mmustermann"]
   }
@@ -96,8 +96,8 @@ Siehe `sql/schema.sql`. Wichtigste Änderungen gegenüber v1:
   aktuellen `sync_token`.
 - `sync_runs` erweitert um `account`, `sync_type`
   (`initial`/`delta`), `contacts_upserted`, `contacts_deleted`.
-- Neue Tabelle `birthday_mail_log`: ein Datensatz pro Tag, an dem
-  erfolgreich eine Geburtstagsmail versendet wurde, verhindert
+- Neue Tabelle `birthday_mail_log`: ein Datensatz pro Tag und Account,
+  an dem erfolgreich eine Geburtstagsmail versendet wurde, verhindert
   Doppelversand bei mehrfachem Container-Neustart am selben Tag.
 - Neue Tabellen `groups` und `group_members`: Speichert
   iCloud-Kontaktgruppen (vCards mit `X-ADDRESSBOOKSERVER-KIND:group`)
@@ -110,20 +110,23 @@ Siehe `sql/schema.sql`. Wichtigste Änderungen gegenüber v1:
 - Eigenständiges Skript `src/mailer.py`, läuft im selben Container über
   einen zweiten Cron-Eintrag, täglich zur in `MAIL_SEND_HOUR`
   konfigurierten Stunde (Default 7 Uhr).
-- Query: alle Kontakte über alle Accounts hinweg, deren `birthday`
+- Pro Account mit gesetztem `birthday_mail_to` wird eine eigene E-Mail
+  versendet, die nur Geburtstage aus diesem Account enthält.
+- Query: Kontakte des jeweiligen Accounts, deren `birthday`
   (Monat/Tag) auf das heutige Datum fällt.
 - Versand nur bei existierenden Geburtstagen: Wird keine E-Mail
   versendet, wenn die Abfrage keine Treffer liefert.
 - Versand per SMTP mit STARTTLS (`smtplib`), Konfiguration über
-  `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM`,
-  `MAIL_TO`.
+  `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM`.
+  Die Empfänger-Adresse (`birthday_mail_to`) wird pro Account in
+  `accounts.json` konfiguriert.
 - Idempotenz: vor dem Versand wird `birthday_mail_log` auf einen
-  Eintrag für den heutigen Tag geprüft; existiert bereits einer, wird
-  der Lauf ohne erneuten Versand beendet.
+  Eintrag für den heutigen Tag und den jeweiligen Account geprüft;
+  existiert bereits einer, wird der Lauf ohne erneuten Versand beendet.
 - Feature-Flag `MAILER_ENABLED` erlaubt das komplette Deaktivieren ohne
   Codeänderung (Default: `false`).
 - E-Mail-Inhalt: HTML-E-Mail mit stylisierten Geburtstagskarten
-  (Name, Alter, Account, Link zur Kontakt-Detailseite falls `WEB_URL`
+  (Name, Alter, Link zur Kontakt-Detailseite falls `WEB_URL`
   gesetzt). Zusätzlich reiner Text-Alternative als Fallback.
 
 ## 7. Konfiguration (Umgebungsvariablen)
@@ -144,12 +147,14 @@ Siehe `sql/schema.sql`. Wichtigste Änderungen gegenüber v1:
 | SMTP_PASSWORD         | nein    | leer, falls Relay ohne Auth                         |
 | SMTP_USE_TLS          | nein    | Default: true                                       |
 | MAIL_FROM             | ja (Mailer) | Absenderadresse                                 |
-| MAIL_TO               | ja (Mailer) | Empfängeradresse(n)                             |
 | MAIL_SEND_HOUR        | nein    | Default: 7, Stunde (0-23) für täglichen Mailversand |
 | WEB_URL               | nein    | Web-URL für Links in Geburtstags-Mails (z.B. https://kontakte.example.de) |
 | AUTH_REMOTE_USER_HEADER | nein  | Default: Remote-User, Header-Name für Authelia-User |
 | API_HOST              | nein    | Default: 0.0.0.0, Bindungs-Adresse des API-Services |
 | API_PORT              | nein    | Default: 8000, Port des API-Services                |
+
+Empfänger-Adresse für Geburtstags-Mails: `birthday_mail_to` pro Account
+in `accounts.json` (keine globale Umgebungsvariable mehr nötig).
 
 Secrets werden weiterhin als klassische Umgebungsvariablen übergeben,
 mit Ausnahme der Multi-Account-Zugangsdaten, die aus `accounts.json`

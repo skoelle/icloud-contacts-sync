@@ -29,7 +29,7 @@ from api.schemas import (
     SyncRunOut,
 )
 from config import Config
-from mailer import build_message, fetch_birthdays_for_date, send_message
+from mailer import build_message, fetch_todays_birthdays_for_account, send_message
 from utils import fmt_birthday_age, fmt_birthday_short, is_unknown_year
 
 logging.basicConfig(level=Config.LOG_LEVEL, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -439,20 +439,43 @@ def admin_test_send(
             status_code=400,
         )
 
-    with db.get_connection() as conn:
-        birthdays = fetch_birthdays_for_date(conn, target)
-
-    msg = build_message(birthdays, target_date=target)
-    try:
-        send_message(msg)
-    except Exception as exc:
+    accounts = Config.load_accounts()
+    mail_accounts = [a for a in accounts if a.birthday_mail_to]
+    if not mail_accounts:
         return templates.TemplateResponse(
             "admin.html",
             {
                 "request": request,
                 "current_user": current_user,
                 "show_all": request.session.get("show_all", False),
-                "error": f"Versand fehlgeschlagen: {exc}",
+                "error": "Keine Accounts mit birthday_mail_to konfiguriert",
+            },
+            status_code=400,
+        )
+
+    sent_count = 0
+    errors = []
+    with db.get_connection() as conn:
+        for account in mail_accounts:
+            birthdays = fetch_todays_birthdays_for_account(conn, account.name, target)
+            if not birthdays:
+                continue
+            msg = build_message(account.name, birthdays, target_date=target)
+            msg["To"] = account.birthday_mail_to
+            try:
+                send_message(msg)
+                sent_count += 1
+            except Exception as exc:
+                errors.append(f"{account.name}: {exc}")
+
+    if errors:
+        return templates.TemplateResponse(
+            "admin.html",
+            {
+                "request": request,
+                "current_user": current_user,
+                "show_all": request.session.get("show_all", False),
+                "error": f"Versand fehlgeschlagen: {'; '.join(errors)}",
             },
             status_code=500,
         )
@@ -463,7 +486,7 @@ def admin_test_send(
             "request": request,
             "current_user": current_user,
             "show_all": request.session.get("show_all", False),
-            "success": f"Test-Mail für {target.strftime('%d.%m.%Y')} gesendet ({len(birthdays)} Kontakte).",
+            "success": f"Test-Mails für {target.strftime('%d.%m.%Y')} gesendet ({sent_count} Accounts).",
         },
     )
 

@@ -81,11 +81,12 @@ CREATE TABLE IF NOT EXISTS group_members (
     KEY idx_group_members_member_uid (member_uid)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Protokoll der Geburtstags-Mails, verhindert Doppelversand am selben Tag.
+-- Protokoll der Geburtstags-Mails, verhindert Doppelversand am selben Tag pro Account.
 CREATE TABLE IF NOT EXISTS birthday_mail_log (
     id              INT AUTO_INCREMENT PRIMARY KEY,
+    account         VARCHAR(100) NOT NULL,
     sent_date       DATE NOT NULL,
     contacts_count  INT NOT NULL,
     sent_at         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY uq_birthday_mail_date (sent_date)
+    UNIQUE KEY uq_birthday_mail_date_account (account, sent_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

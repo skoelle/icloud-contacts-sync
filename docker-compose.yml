@@ -20,7 +20,6 @@ services:
       SMTP_PASSWORD: "${SMTP_PASSWORD}"
       SMTP_USE_TLS: "${SMTP_USE_TLS:-true}"
       MAIL_FROM: "${MAIL_FROM}"
-      MAIL_TO: "${MAIL_TO}"
       MAIL_SEND_HOUR: "${MAIL_SEND_HOUR:-7}"
       TIMEZONE: "${TIMEZONE:-Europe/Berlin}"
       WEB_URL: "${WEB_URL:-}"
@@ -57,7 +56,6 @@ services:
       SMTP_PASSWORD: "${SMTP_PASSWORD}"
       SMTP_USE_TLS: "${SMTP_USE_TLS:-true}"
       MAIL_FROM: "${MAIL_FROM}"
-      MAIL_TO: "${MAIL_TO}"
       TIMEZONE: "${TIMEZONE:-Europe/Berlin}"
       WEB_URL: "${WEB_URL:-}"
     volumes:

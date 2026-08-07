@@ -15,6 +15,9 @@ Felder pro Account:
   `Remote-User`-Header an die Web-Ansicht/API durchreicht. Dieser Wert
   bestimmt, welchen Account ein eingeloggter Benutzer in der
   Web-Ansicht sieht.
+- `birthday_mail_to` (optional): Empfänger-Adresse für die tägliche
+  Geburtstagsmail. Fehlt das Feld oder ist leer, wird für diesen Account
+  keine Geburtstagsmail versendet.
 - `healthcheck_url` (optional): URL, die nach jedem erfolgreichen
   Sync-Lauf dieses Accounts aufgerufen wird (z.B. für Uptime-Monitoring
   wie Healthchecks.io). Bei Sync-Fehlern wird die URL nicht aufgerufen.

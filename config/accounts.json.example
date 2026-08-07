@@ -5,6 +5,7 @@
       "apple_email": "markus@icloud.com",
       "apple_app_password": "xxxx-xxxx-xxxx-xxxx",
       "authelia_user": "mmustermann",
+      "birthday_mail_to": "markus@example.de",
       "custom_links": [
         {"label": "Google Suche", "url": "https://www.google.com/search?q=[fullname]"},
         {"label": "LinkedIn", "url": "https://www.linkedin.com/search/results/all/?keywords=[fullname]"},
@@ -18,6 +19,7 @@
       "apple_email": "partner@icloud.com",
       "apple_app_password": "yyyy-yyyy-yyyy-yyyy",
       "authelia_user": "partner.user",
+      "birthday_mail_to": "partner@example.de",
       "custom_links": [],
       "healthcheck_url": ""
     }

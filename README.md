@@ -33,10 +33,10 @@ vim config/accounts.json
 ```
 
 Trage für jede Apple-ID einen Eintrag mit eindeutigem `name`,
-`apple_email`, `apple_app_password` und `authelia_user` ein. Optional
-kann pro Account eine `healthcheck_url` konfiguriert werden, die nach
-jedem erfolgreichen Sync aufgerufen wird (z.B. für Uptime-Monitoring).
-Diese Datei
+`apple_email`, `apple_app_password`, `authelia_user` und (optional)
+`birthday_mail_to` ein. Optional kann pro Account eine `healthcheck_url`
+konfiguriert werden, die nach jedem erfolgreichen Sync aufgerufen wird
+(z.B. für Uptime-Monitoring). Diese Datei
 bleibt lokal auf dem Host, sie ist in `.gitignore` ausgeschlossen und
 wird nur als Volume in den Container gemountet.
 
@@ -58,7 +58,9 @@ vim .env
 ```
 
 Trage mindestens `MARIADB_USER`, `MARIADB_PASSWORD` sowie (falls du den
-Mailer nutzen willst) `SMTP_HOST`, `MAIL_FROM` und `MAIL_TO` ein.
+Mailer nutzen willst) `SMTP_HOST` und `MAIL_FROM` ein. Die
+Empfänger-Adresse wird pro Account in `accounts.json` unter
+`birthday_mail_to` konfiguriert.
 
 ## 5. Image beziehen
 
@@ -106,7 +108,7 @@ SELECT account, sync_token, updated_at FROM sync_state;
 Versandhistorie der Geburtstagsmails:
 
 ```sql
-SELECT sent_date, contacts_count, sent_at FROM birthday_mail_log
+SELECT account, sent_date, contacts_count, sent_at FROM birthday_mail_log
 ORDER BY sent_date DESC LIMIT 10;
 ```
 
@@ -114,16 +116,18 @@ ORDER BY sent_date DESC LIMIT 10;
 
 - Läuft automatisch täglich um die in `MAIL_SEND_HOUR` konfigurierte
   Stunde (Default 7 Uhr) innerhalb desselben Containers.
-- Versendet eine HTML-E-Mail mit stylisierten Geburtstagskarten und
-  Links zur Kontakt-Detailseite (falls `WEB_URL` gesetzt).
+- Versendet pro Account mit gesetztem `birthday_mail_to` eine eigene
+  HTML-E-Mail mit stylisierten Geburtstagskarten und Links zur
+  Kontakt-Detailseite (falls `WEB_URL` gesetzt).
 - Über `MAILER_ENABLED=false` lässt sich der Mailer ganz abschalten,
   ohne den Kontakt-Sync zu beeinträchtigen.
 - Manueller Testlauf im laufenden Container:
   ```
   docker exec -it icloud-contacts-sync python3 /app/mailer.py
   ```
-- Ein zweiter manueller Lauf am selben Tag versendet keine zweite Mail,
-  solange bereits ein Eintrag in `birthday_mail_log` für heute existiert.
+- Ein zweiter manueller Lauf am selben Tag versendet keine zweite Mail
+  pro Account, solange bereits ein Eintrag in `birthday_mail_log` für
+  heute und diesen Account existiert.
 
 ## 9. Lokale Entwicklung (ohne Docker)
 

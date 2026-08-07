@@ -13,13 +13,15 @@ ICLOUD_BASE_URL = "https://contacts.icloud.com/"
 
 class Account:
     def __init__(self, name: str, apple_email: str, apple_app_password: str, authelia_user: str | None,
-                 custom_links: list[dict] | None = None, healthcheck_url: str = ""):
+                 custom_links: list[dict] | None = None, healthcheck_url: str = "",
+                 birthday_mail_to: str | None = None):
         self.name = name
         self.apple_email = apple_email
         self.apple_app_password = apple_app_password
         self.authelia_user = authelia_user
         self.custom_links = custom_links or []
         self.healthcheck_url = healthcheck_url
+        self.birthday_mail_to = birthday_mail_to
 
 
 class Config:
@@ -43,7 +45,6 @@ class Config:
     SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
     SMTP_USE_TLS = os.environ.get("SMTP_USE_TLS", "true").lower() == "true"
     MAIL_FROM = os.environ.get("MAIL_FROM", "")
-    MAIL_TO = os.environ.get("MAIL_TO", "")
 
     # Authelia liefert den eingeloggten Benutzer per Header, der vom
     # vorgeschalteten nginx/traefik als Remote-User weitergereicht wird.
@@ -67,7 +68,6 @@ class Config:
         missing = [n for n, v in [
             ("SMTP_HOST", cls.SMTP_HOST),
             ("MAIL_FROM", cls.MAIL_FROM),
-            ("MAIL_TO", cls.MAIL_TO),
         ] if not v]
         if missing:
             raise RuntimeError(f"Fehlende Mailer-Umgebungsvariablen: {', '.join(missing)}")
@@ -103,7 +103,8 @@ class Config:
             seen_names.add(name)
             custom_links = entry.get("custom_links", [])
             healthcheck_url = entry.get("healthcheck_url", "")
-            accounts.append(Account(name, email, pwd, authelia_user, custom_links, healthcheck_url))
+            birthday_mail_to = entry.get("birthday_mail_to") or None
+            accounts.append(Account(name, email, pwd, authelia_user, custom_links, healthcheck_url, birthday_mail_to))
         return accounts
 
     @classmethod
