@@ -12,10 +12,28 @@ import sys
 import db
 from carddav_client import ICLOUD_BASE_URL, CardDAVClient, SyncTokenInvalid
 from config import Config
-from vcard_parser import parse_vcard
+from vcard_parser import is_group_vcard, parse_group, parse_vcard
 
 logging.basicConfig(level=Config.LOG_LEVEL, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("sync")
+
+
+def _classify_vcards(raw_vcards, raw_etags, account_name):
+    contacts, groups = [], []
+    for v, etag in zip(raw_vcards, raw_etags):
+        if is_group_vcard(v):
+            g = parse_group(v, account_name, etag=etag)
+            if g:
+                groups.append(g)
+            else:
+                logger.warning("[%s] Gruppen-vCard konnte nicht geparst werden, überspringe", account_name)
+        else:
+            c = parse_vcard(v, account_name, etag=etag)
+            if c:
+                contacts.append(c)
+            else:
+                logger.warning("[%s] vCard konnte nicht geparst werden, überspringe", account_name)
+    return contacts, groups
 
 
 def sync_account(conn, account, href_to_uid_cache: dict):
@@ -30,19 +48,14 @@ def sync_account(conn, account, href_to_uid_cache: dict):
         if not stored_token:
             logger.info("[%s] Kein sync-token vorhanden, führe initialen Full-Sync aus", account.name)
             raw_vcards, raw_etags = client.fetch_all_vcards(collection_url)
-            contacts = []
-            for v, etag in zip(raw_vcards, raw_etags):
-                c = parse_vcard(v, account.name, etag=etag)
-                if c:
-                    contacts.append(c)
-                else:
-                    logger.warning("[%s] vCard konnte nicht geparst werden, überspringe", account.name)
+            contacts, groups = _classify_vcards(raw_vcards, raw_etags, account.name)
             db.replace_all_contacts_for_account(conn, account.name, contacts, run_id)
+            db.replace_all_groups_for_account(conn, account.name, groups, run_id)
             _, _, _, new_token = client.sync_collection(collection_url, None, fetch_missing=False)
             if new_token:
                 db.save_sync_token(conn, account.name, new_token)
             db.finish_sync_run(conn, run_id, "success", upserted=len(contacts), deleted=0)
-            logger.info("[%s] Initialer Sync abgeschlossen: %d Kontakte", account.name, len(contacts))
+            logger.info("[%s] Initialer Sync abgeschlossen: %d Kontakte, %d Gruppen", account.name, len(contacts), len(groups))
             return
 
         try:
@@ -51,29 +64,19 @@ def sync_account(conn, account, href_to_uid_cache: dict):
             logger.warning("[%s] sync-token vom Server abgelehnt, führe vollen Re-Sync aus", account.name)
             db.clear_sync_token(conn, account.name)
             raw_vcards, raw_etags = client.fetch_all_vcards(collection_url)
-            contacts = []
-            for v, etag in zip(raw_vcards, raw_etags):
-                c = parse_vcard(v, account.name, etag=etag)
-                if c:
-                    contacts.append(c)
-                else:
-                    logger.warning("[%s] vCard konnte nicht geparst werden, überspringe", account.name)
+            contacts, groups = _classify_vcards(raw_vcards, raw_etags, account.name)
             db.replace_all_contacts_for_account(conn, account.name, contacts, run_id)
+            db.replace_all_groups_for_account(conn, account.name, groups, run_id)
             _, _, _, new_token = client.sync_collection(collection_url, None, fetch_missing=False)
             if new_token:
                 db.save_sync_token(conn, account.name, new_token)
             db.finish_sync_run(conn, run_id, "success", upserted=len(contacts), deleted=0)
-            logger.info("[%s] Re-Sync abgeschlossen: %d Kontakte", account.name, len(contacts))
+            logger.info("[%s] Re-Sync abgeschlossen: %d Kontakte, %d Gruppen", account.name, len(contacts), len(groups))
             return
 
-        contacts = []
-        for v, etag in zip(changed_vcards, etags):
-            c = parse_vcard(v, account.name, etag=etag)
-            if c:
-                contacts.append(c)
-            else:
-                logger.warning("[%s] vCard konnte nicht geparst werden, überspringe", account.name)
+        contacts, groups = _classify_vcards(changed_vcards, etags, account.name)
         db.upsert_contacts(conn, contacts, run_id)
+        db.upsert_groups(conn, groups, run_id)
 
         deleted_uids = []
         for href in deleted_hrefs:
@@ -83,14 +86,15 @@ def sync_account(conn, account, href_to_uid_cache: dict):
             else:
                 logger.warning("[%s] Konnte UID nicht aus href extrahieren: %s", account.name, href)
         db.delete_contacts_by_href_uids(conn, account.name, deleted_uids)
+        db.delete_groups_by_uids(conn, account.name, deleted_uids)
 
         if new_token:
             db.save_sync_token(conn, account.name, new_token)
 
         db.finish_sync_run(conn, run_id, "success", upserted=len(contacts), deleted=len(deleted_uids))
         logger.info(
-            "[%s] Delta-Sync abgeschlossen: %d geändert/neu, %d gelöscht",
-            account.name, len(contacts), len(deleted_uids),
+            "[%s] Delta-Sync abgeschlossen: %d geändert/neu, %d gelöscht (%d Gruppen geändert)",
+            account.name, len(contacts), len(deleted_uids), len(groups),
         )
     except Exception as exc:
         logger.exception("[%s] Sync-Lauf %s fehlgeschlagen", account.name, run_id)

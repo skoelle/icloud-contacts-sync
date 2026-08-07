@@ -23,6 +23,7 @@ class ContactOut(BaseModel):
     urls: list
     social_profiles: list
     categories: list
+    groups: list[str] = []
     updated_at: str
 
     class Config:
@@ -44,3 +45,30 @@ class SyncRunOut(BaseModel):
     contacts_upserted: int | None
     contacts_deleted: int | None
     error_message: str | None
+
+
+class GroupMemberOut(BaseModel):
+    member_uid: str
+    full_name: str | None
+    id: int | None = None
+
+
+class GroupOut(BaseModel):
+    id: int
+    account: str
+    uid: str
+    name: str | None
+    member_count: int
+    updated_at: str
+
+    class Config:
+        from_attributes = True
+
+
+class GroupDetailOut(GroupOut):
+    members: list[GroupMemberOut]
+
+
+class GroupListResponse(BaseModel):
+    total: int
+    items: list[GroupOut]

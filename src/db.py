@@ -279,3 +279,81 @@ def replace_all_contacts_for_account(conn, account: str, contacts: list[dict], r
                 raise
     conn.commit()
     logger.info("Voller Re-Sync für Account %s abgeschlossen: %d Kontakte", account, len(contacts))
+
+
+def upsert_groups(conn, groups: list[dict], run_id: str):
+    if not groups:
+        return
+    now = datetime.now(timezone.utc)
+    with conn.cursor() as cur:
+        for g in groups:
+            g["sync_run_id"] = run_id
+            g["last_synced_at"] = now
+            member_uids = g.pop("member_uids", [])
+            cols = [k for k in g if k != "member_uids"]
+            placeholders = ", ".join(["%s"] * len(cols))
+            update_clause = ", ".join(f"{col}=VALUES({col})" for col in cols if col not in ("account", "uid"))
+            sql = (
+                f"INSERT INTO `groups` ({', '.join(cols)}) VALUES ({placeholders}) "
+                f"ON DUPLICATE KEY UPDATE {update_clause}"
+            )
+            try:
+                cur.execute(sql, [g[c] for c in cols])
+            except Exception as exc:
+                logger.error("INSERT Gruppe fehlgeschlagen für UID %s: %s", g.get("uid"), exc)
+                raise
+            cur.execute("SELECT id FROM `groups` WHERE account = %s AND uid = %s", (g["account"], g["uid"]))
+            row = cur.fetchone()
+            if not row:
+                logger.error("Konnte Gruppen-ID nicht ermitteln für UID %s", g.get("uid"))
+                continue
+            group_id = row["id"]
+            cur.execute("DELETE FROM group_members WHERE group_id = %s", (group_id,))
+            if member_uids:
+                member_values = [(group_id, uid) for uid in member_uids]
+                cur.executemany(
+                    "INSERT INTO group_members (group_id, member_uid) VALUES (%s, %s)",
+                    member_values,
+                )
+    conn.commit()
+
+
+def delete_groups_by_uids(conn, account: str, uids: list[str]):
+    if not uids:
+        return
+    with conn.cursor() as cur:
+        placeholders = ", ".join(["%s"] * len(uids))
+        cur.execute(
+            f"DELETE FROM `groups` WHERE account = %s AND uid IN ({placeholders})",
+            [account] + uids,
+        )
+    conn.commit()
+
+
+def replace_all_groups_for_account(conn, account: str, groups: list[dict], run_id: str):
+    with conn.cursor() as cur:
+        cur.execute("DELETE FROM `groups` WHERE account = %s", (account,))
+    conn.commit()
+    if groups:
+        upsert_groups(conn, groups, run_id)
+    logger.info("Gruppen-Re-Sync für Account %s abgeschlossen: %d Gruppen", account, len(groups))
+
+
+def get_groups_for_contact(conn, account: str, member_uid: str) -> list[dict]:
+    with conn.cursor() as cur:
+        cur.execute(
+            """SELECT g.id, g.name, g.uid
+               FROM `groups` g
+               JOIN group_members gm ON gm.group_id = g.id
+               WHERE g.account = %s AND gm.member_uid = %s
+               ORDER BY g.name""",
+            (account, member_uid),
+        )
+        return cur.fetchall()
+
+
+def get_group_count(conn, account: str | None) -> int:
+    where_clause, params = _account_filter_clause(account)
+    with conn.cursor() as cur:
+        cur.execute(f"SELECT COUNT(*) AS total FROM `groups` {where_clause}", params)
+        return cur.fetchone()["total"]
