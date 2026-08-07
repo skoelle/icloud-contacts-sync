@@ -10,14 +10,16 @@
         {"label": "LinkedIn", "url": "https://www.linkedin.com/search/results/all/?keywords=[fullname]"},
         {"label": "Google Maps Home", "url": "https://www.google.com/maps?q=[homecity]"},
         {"label": "Google Maps Work", "url": "https://www.google.com/maps?q=[workcity]"}
-      ]
+      ],
+      "healthcheck_url": "https://healthchecks.example.de/ping/abc123"
     },
     {
       "name": "partner",
       "apple_email": "partner@icloud.com",
       "apple_app_password": "yyyy-yyyy-yyyy-yyyy",
       "authelia_user": "partner.user",
-      "custom_links": []
+      "custom_links": [],
+      "healthcheck_url": ""
     }
   ],
   "admins": [

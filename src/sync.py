@@ -9,6 +9,8 @@ vollständiger Re-Sync."""
 import logging
 import sys
 
+import requests
+
 import db
 from carddav_client import ICLOUD_BASE_URL, CardDAVClient, SyncTokenInvalid
 from config import Config
@@ -16,6 +18,16 @@ from vcard_parser import is_group_vcard, parse_group, parse_vcard
 
 logging.basicConfig(level=Config.LOG_LEVEL, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("sync")
+
+
+def _call_healthcheck(account):
+    if not account.healthcheck_url:
+        return
+    try:
+        resp = requests.get(account.healthcheck_url, timeout=10)
+        logger.info("[%s] Healthcheck OK (%d)", account.name, resp.status_code)
+    except Exception as exc:
+        logger.warning("[%s] Healthcheck fehlgeschlagen: %s", account.name, exc)
 
 
 def _classify_vcards(raw_vcards, raw_etags, account_name):
@@ -56,6 +68,7 @@ def sync_account(conn, account, href_to_uid_cache: dict):
                 db.save_sync_token(conn, account.name, new_token)
             db.finish_sync_run(conn, run_id, "success", upserted=len(contacts), deleted=0)
             logger.info("[%s] Initialer Sync abgeschlossen: %d Kontakte, %d Gruppen", account.name, len(contacts), len(groups))
+            _call_healthcheck(account)
             return
 
         try:
@@ -72,6 +85,7 @@ def sync_account(conn, account, href_to_uid_cache: dict):
                 db.save_sync_token(conn, account.name, new_token)
             db.finish_sync_run(conn, run_id, "success", upserted=len(contacts), deleted=0)
             logger.info("[%s] Re-Sync abgeschlossen: %d Kontakte, %d Gruppen", account.name, len(contacts), len(groups))
+            _call_healthcheck(account)
             return
 
         contacts, groups = _classify_vcards(changed_vcards, etags, account.name)
@@ -97,6 +111,7 @@ def sync_account(conn, account, href_to_uid_cache: dict):
             "[%s] Delta-Sync abgeschlossen: %d geändert/neu, %d gelöscht (%d Gruppen geändert)",
             account.name, len(contacts), len(deleted_uids), len(groups),
         )
+        _call_healthcheck(account)
     except Exception as exc:
         logger.exception("[%s] Sync-Lauf %s fehlgeschlagen", account.name, run_id)
         print(f"SYNC-FEHLER [{account.name}]: {exc}", file=sys.stderr, flush=True)
