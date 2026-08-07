@@ -145,8 +145,9 @@ def delete_group_members_by_uids(conn, account: str, uids: list[str]):
 
 
 def _build_full_name(row: dict) -> str | None:
+    prefix = (row.get("prefix") or "").replace(",", " ").strip()
     parts = [
-        row.get("prefix"),
+        prefix,
         row.get("given_name"),
         row.get("middle_name"),
         row.get("family_name"),
