@@ -7,6 +7,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <title>{{ contact.full_name or 'Kontakt' }} – Kontakte</title>
+    {% if contact.addresses %}
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "{{ contact.full_name or '' }}",
+        "address": [
+            {% for addr in contact.addresses %}
+            {
+                "@type": "PostalAddress",
+                {% if addr.street %}"streetAddress": "{{ addr.street }}",{% endif %}
+                {% if addr.city %}"addressLocality": "{{ addr.city }}",{% endif %}
+                {% if addr.zip %}"postalCode": "{{ addr.zip }}",{% endif %}
+                {% if addr.region %}"addressRegion": "{{ addr.region }}",{% endif %}
+                {% if addr.country %}"addressCountry": "{{ addr.country }}"{% endif %}
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ]
+    }
+    </script>
+    {% endif %}
     <style>
         * {
             margin: 0;
@@ -205,6 +226,19 @@
             word-break: break-word;
         }
 
+        .maps-link {
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 0.3rem;
+            color: #0066cc;
+            opacity: 0.6;
+            transition: opacity 0.15s ease;
+        }
+
+        .maps-link:hover {
+            opacity: 1;
+        }
+
         .tile-value a {
             color: #0066cc;
             text-decoration: none;
@@ -383,6 +417,11 @@
                                 {{ addr.street }}<br>
                                 {% if addr.zip %}{{ addr.zip }} {% endif %}{{ addr.city }}<br>
                                 {{ addr.region }}{% if addr.region and addr.country %}, {% endif %}{{ addr.country }}
+                                {% if addr.street and addr.city %}
+                                <a href="https://www.google.com/maps/search/?api=1&query={{ addr.street|urlquote }}, {% if addr.zip %}{{ addr.zip|urlquote }} {% endif %}{{ addr.city|urlquote }}" target="_blank" rel="noopener" class="maps-link" title="In Maps öffnen">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
+                                </a>
+                                {% endif %}
                             </div>
                         </div>
                         {% endfor %}
