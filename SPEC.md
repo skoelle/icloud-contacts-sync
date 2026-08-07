@@ -194,6 +194,12 @@ Unverändert gegenüber v1:
 - **Mehrere Empfänger je Kontakt, Vorlauf-Erinnerungen**
   (z. B. "in 3 Tagen") sind funktional einfach nachrüstbar, aktuell
   aber nicht Teil des Scopes.
+- **Contact Detail Page: UID statt DB-ID**: Der aktuelle Lookup
+  `WHERE id = %s` nutzt die Auto-Increment-ID, die sich bei Re-Syncs
+  ändern kann. Stabilere Alternative: `WHERE uid = %s AND account = %s`,
+  da die UID aus CardDAV konstant bleibt. Erfordert Änderungen an
+  Routes (`/contacts/{account}/{uid}`), Templates, Mailer-URLs und
+  Schema. Details siehe `feature-contact-uid-lookup.md`.
 
 
 ## 12. Web-Ansicht und API (v3, im selben Repo/Image)
