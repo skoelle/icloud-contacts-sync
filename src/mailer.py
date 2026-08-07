@@ -93,26 +93,26 @@ def build_message(birthdays: list[dict], target_date: date | None = None) -> Ema
         age = fmt_birthday_age(b["birthday"], today)
         age_str = f' <span style="white-space:nowrap;">· {age} Jahre</span>' if age is not None else ""
         contact_link = f"{Config.WEB_URL.rstrip('/')}/contacts/{b['id']}" if Config.WEB_URL else ""
-        org_html = f'<div style="font-size:14px;color:#666;margin-top:4px;">{b["organization"]}</div>' if b.get("organization") else ""
+        org_html = f'<div style="font-size:13px;color:#666;margin-top:4px;">{b["organization"]}</div>' if b.get("organization") else ""
         photo_cell = ""
         if b.get("photo_url"):
             photo_cell = f'<td width="96" valign="top" style="padding:16px 0 16px 20px;"><img src="{b["photo_url"]}" alt="" width="80" height="80" style="border-radius:50%;display:block;"></td>'
         if contact_link:
             content_html = f"""<a href="{contact_link}" style="color:#222;text-decoration:none;display:block;">
-                <div style="font-size:18px;font-weight:600;color:#222;">{b["full_name"]}</div>
+                <div style="font-size:16px;font-weight:600;color:#222;">{b["full_name"]}</div>
                 {org_html}
-                <div style="font-size:14px;color:#888;margin-top:4px;">🎂 {date_str}{age_str}</div>
+                <div style="font-size:13px;color:#888;margin-top:4px;">🎂 {date_str}{age_str}</div>
               </a>"""
         else:
-            content_html = f"""<div style="font-size:18px;font-weight:600;color:#222;">{b["full_name"]}</div>
+            content_html = f"""<div style="font-size:16px;font-weight:600;color:#222;">{b["full_name"]}</div>
               {org_html}
-              <div style="font-size:14px;color:#888;margin-top:4px;">🎂 {date_str}{age_str}</div>"""
+              <div style="font-size:13px;color:#888;margin-top:4px;">🎂 {date_str}{age_str}</div>"""
         cards_html += f"""
         <tr>
-          <td style="padding:0 0 12px 0;">
+          <td style="padding:0 0 8px 0;">
             <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f0f0;border:1px solid #e0e0e0;">
               <tr>
-                <td style="padding:16px 20px;">
+                <td style="padding:12px 16px;">
                   {content_html}
                 </td>
                 {photo_cell}
@@ -153,9 +153,9 @@ def build_message(birthdays: list[dict], target_date: date | None = None) -> Ema
       <td align="center" style="padding:32px 16px;">
         <table width="800" cellpadding="0" cellspacing="0" style="max-width:800px;width:100%;background:#ffffff;border:1px solid #e0e0e0;">
           <tr>
-            <td style="padding:32px;">
-              <h1 style="font-size:24px;font-weight:600;color:#222;margin:0;">Geburtstage heute</h1>
-              <p style="font-size:14px;color:#666;margin:8px 0 24px 0;">{today.strftime('%d.%m.%Y')} · {len(birthdays)} Kontakte</p>
+            <td style="padding:16px;">
+              <h1 style="font-size:20px;font-weight:600;color:#222;margin:0;">Geburtstage heute</h1>
+              <p style="font-size:13px;color:#666;margin:8px 0 16px 0;">{today.strftime('%d.%m.%Y')} · {len(birthdays)} Kontakte</p>
               <table width="100%" cellpadding="0" cellspacing="0">
                 {cards_html}
               </table>
