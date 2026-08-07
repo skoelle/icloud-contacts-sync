@@ -28,7 +28,7 @@ def fetch_birthdays_for_date(conn, target_date: date) -> list[dict]:
                WHERE birthday IS NOT NULL
                  AND MONTH(birthday) = %s
                  AND DAY(birthday) = %s
-               ORDER BY full_name""",
+               ORDER BY given_name, family_name, full_name""",
             (target_date.month, target_date.day),
         )
         rows = cur.fetchall()

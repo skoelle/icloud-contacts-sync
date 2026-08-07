@@ -114,7 +114,7 @@ def list_contacts(
                 f"""SELECT id, account, uid, full_name, given_name, family_name, organization,
                            job_title, birthday, notes, photo_url, emails, phones, addresses, urls, social_profiles, categories, updated_at
                     FROM contacts {where_clause}{search_clause}
-                    ORDER BY full_name
+                    ORDER BY given_name, family_name, full_name
                     LIMIT %s OFFSET %s""",
                 params + [limit, offset],
             )
@@ -163,7 +163,7 @@ def birthdays_today(current_user: str = Depends(get_current_user)):
                 f"""SELECT id, account, uid, full_name, given_name, family_name, organization,
                            job_title, birthday, notes, photo_url, emails, phones, addresses, urls, social_profiles, categories, updated_at
                     FROM contacts {where_clause} {month_day_clause}
-                    ORDER BY full_name""",
+                    ORDER BY given_name, family_name, full_name""",
                 params + [today.month, today.day],
             )
             rows = cur.fetchall()
@@ -266,7 +266,8 @@ def get_group(group_id: int, current_user: str = Depends(get_current_user)):
                    FROM group_members gm
                    JOIN `groups` g ON g.id = gm.group_id
                    LEFT JOIN contacts c ON c.account = g.account AND c.uid = gm.member_uid
-                   WHERE g.id = %s""",
+                   WHERE g.id = %s
+                   ORDER BY c.given_name, c.family_name, c.full_name""",
                 (group_id,),
             )
             members = cur.fetchall()
@@ -305,7 +306,8 @@ def get_group_members(group_id: int, current_user: str = Depends(get_current_use
                    FROM group_members gm
                    JOIN `groups` g ON g.id = gm.group_id
                    LEFT JOIN contacts c ON c.account = g.account AND c.uid = gm.member_uid
-                   WHERE gm.group_id = %s""",
+                   WHERE gm.group_id = %s
+                   ORDER BY c.given_name, c.family_name, c.full_name""",
                 (group_id,),
             )
             rows = cur.fetchall()
@@ -546,7 +548,7 @@ def web_search(
                     f"""SELECT id, full_name, given_name, middle_name, family_name,
                                prefix, suffix, organization, birthday, account, photo_url
                         FROM contacts {where_clause}{search_clause}
-                        ORDER BY full_name
+                        ORDER BY given_name, family_name, full_name
                         LIMIT 200""",
                     params,
                 )

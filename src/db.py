@@ -184,7 +184,7 @@ def search_contacts_without_photo(conn, account: str | None) -> list[dict]:
                     WHERE addr.city IS NOT NULL AND addr.city != ''
                 )
                 AND family_name != 'X'
-                ORDER BY full_name""",
+                ORDER BY given_name, family_name, full_name""",
             params,
         )
         return cur.fetchall()
@@ -206,7 +206,7 @@ def search_contacts_without_city(conn, account: str | None) -> list[dict]:
                     WHERE addr.city IS NOT NULL AND addr.city != ''
                 )
                 AND family_name != 'X'
-                ORDER BY full_name""",
+                ORDER BY given_name, family_name, full_name""",
             params,
         )
         return cur.fetchall()
@@ -225,7 +225,7 @@ def search_contacts_without_social(conn, account: str | None) -> list[dict]:
                 AND (JSON_LENGTH(phones) > 0 OR JSON_LENGTH(emails) > 0)
                 AND (social_profiles IS NULL OR JSON_LENGTH(social_profiles) = 0)
                 AND family_name != 'X'
-                ORDER BY full_name""",
+                ORDER BY given_name, family_name, full_name""",
             params,
         )
         return cur.fetchall()
@@ -394,7 +394,7 @@ def get_contacts_by_group_uid(conn, account: str | None, group_uid: str) -> list
                 JOIN group_members gm ON gm.member_uid = c.uid
                 JOIN `groups` g ON g.id = gm.group_id AND g.account = c.account
                 {where_clause} {group_op} g.uid = %s
-                ORDER BY c.full_name""",
+                ORDER BY c.given_name, c.family_name, c.full_name""",
             params + [group_uid],
         )
         return cur.fetchall()
