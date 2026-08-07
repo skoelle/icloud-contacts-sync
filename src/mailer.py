@@ -86,9 +86,10 @@ def build_message(birthdays: list[dict], target_date: date | None = None) -> Ema
     for b in birthdays:
         date_str = fmt_birthday_short(b["birthday"])
         age = fmt_birthday_age(b["birthday"], today)
-        age_str = f" · {age} Jahre" if age is not None else ""
+        age_str = f' <span style="white-space:nowrap;">· {age} Jahre</span>' if age is not None else ""
         contact_link = f"{Config.WEB_URL.rstrip('/')}/contacts/{b['id']}" if Config.WEB_URL else ""
-        name_html = f'<a href="{contact_link}" style="color:#222;text-decoration:none;">{b["full_name"]}</a>' if contact_link else b["full_name"]
+        link_start = f'<a href="{contact_link}" style="color:#222;text-decoration:none;display:block;">' if contact_link else ""
+        link_end = "</a>" if contact_link else ""
         is_today = b["birthday"].month == today.month and b["birthday"].day == today.day
         card_bg = "#fff3cd" if is_today else "#fff"
         org_html = f'<div style="font-size:14px;color:#666;margin-top:4px;">{b["organization"]}</div>' if b.get("organization") else ""
@@ -98,14 +99,16 @@ def build_message(birthdays: list[dict], target_date: date | None = None) -> Ema
         cards_html += f"""
         <tr>
           <td style="background:{card_bg};border-radius:8px;padding:1rem 1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+            {link_start}
             <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;">
               <div>
-                <div style="font-size:18px;font-weight:600;color:#222;">{name_html}</div>
+                <div style="font-size:18px;font-weight:600;color:#222;">{b["full_name"]}</div>
                 {org_html}
                 <div style="font-size:14px;color:#888;margin-top:4px;">🎂 {date_str}{age_str}</div>
               </div>
               {photo_html}
             </div>
+            {link_end}
           </td>
         </tr>
         <tr><td style="height:12px;"></td></tr>"""
