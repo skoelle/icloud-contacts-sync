@@ -7,27 +7,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <title>{{ contact.full_name or 'Kontakt' }} – Kontakte</title>
-    {% if contact.addresses %}
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "Person",
-        "name": "{{ contact.full_name or '' }}",
-        "address": [
-            {% for addr in contact.addresses %}
-            {
-                "@type": "PostalAddress",
-                {% if addr.street %}"streetAddress": "{{ addr.street }}",{% endif %}
-                {% if addr.city %}"addressLocality": "{{ addr.city }}",{% endif %}
-                {% if addr.zip %}"postalCode": "{{ addr.zip }}",{% endif %}
-                {% if addr.region %}"addressRegion": "{{ addr.region }}",{% endif %}
-                {% if addr.country %}"addressCountry": "{{ addr.country }}"{% endif %}
-            }{% if not loop.last %},{% endif %}
-            {% endfor %}
-        ]
-    }
-    </script>
-    {% endif %}
     <style>
         * {
             margin: 0;
