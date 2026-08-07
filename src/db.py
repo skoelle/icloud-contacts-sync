@@ -371,3 +371,30 @@ def get_group_count(conn, account: str | None) -> int:
     with conn.cursor() as cur:
         cur.execute(f"SELECT COUNT(*) AS total FROM `groups` {where_clause}", params)
         return cur.fetchone()["total"]
+
+
+def get_all_groups(conn, account: str | None) -> list[dict]:
+    where_clause, params = _account_filter_clause(account)
+    with conn.cursor() as cur:
+        cur.execute(
+            f"SELECT id, name, uid FROM `groups` {where_clause} ORDER BY name",
+            params,
+        )
+        return cur.fetchall()
+
+
+def get_contacts_by_group_uid(conn, account: str | None, group_uid: str) -> list[dict]:
+    where_clause, params = _account_filter_clause(account)
+    group_op = "AND" if where_clause else "WHERE"
+    with conn.cursor() as cur:
+        cur.execute(
+            f"""SELECT c.id, c.full_name, c.given_name, c.middle_name, c.family_name,
+                       c.prefix, c.suffix, c.organization, c.birthday, c.account, c.photo_url
+                FROM contacts c
+                JOIN group_members gm ON gm.member_uid = c.uid
+                JOIN `groups` g ON g.id = gm.group_id AND g.account = c.account
+                {where_clause} {group_op} g.uid = %s
+                ORDER BY c.full_name""",
+            params + [group_uid],
+        )
+        return cur.fetchall()

@@ -326,6 +326,7 @@ def web_dashboard(
     with db.get_connection() as conn:
         contact_count = db.get_contact_count(conn, account_name)
         upcoming_birthdays = db.get_upcoming_birthdays(conn, account_name, 7)
+        groups = db.get_all_groups(conn, account_name)
         where_clause, params = _account_filter_clause(account_name)
         with conn.cursor() as cur:
             cur.execute(
@@ -371,6 +372,7 @@ def web_dashboard(
             "upcoming_birthdays": upcoming_birthdays,
             "last_sync": last_sync,
             "last_sync_with_changes": last_sync_with_changes,
+            "groups": groups,
             "current_year": datetime.now(Config.TIMEZONE).date().year,
             "today": datetime.now(Config.TIMEZONE).date(),
         },
@@ -489,6 +491,7 @@ def web_search_special(
 
     with db.get_connection() as conn:
         rows = query_fn(conn, account_name)
+        groups = db.get_all_groups(conn, account_name)
 
     for row in rows:
         if not row.get("full_name"):
@@ -504,6 +507,7 @@ def web_search_special(
             "account_name": account_name or "alle Accounts",
             "contacts": rows,
             "search": "",
+            "groups": groups,
             "search_title": title_map.get(type, "Suche"),
         },
     )
@@ -513,29 +517,41 @@ def web_search_special(
 def web_search(
     request: Request,
     search: str | None = Query(default=None),
+    group: str | None = Query(default=None),
     current_user: str = Depends(get_current_user),
 ):
     account_name, is_admin, show_all = _resolve_effective_account(request, current_user)
 
     with db.get_connection() as conn:
-        where_clause, params = _account_filter_clause(account_name)
-        search_clause = ""
-        if search:
-            search_op = "AND" if where_clause else "WHERE"
-            search_clause = f" {search_op} (full_name LIKE %s OR given_name LIKE %s OR family_name LIKE %s OR organization LIKE %s)"
-            like = f"%{search}%"
-            params.extend([like, like, like, like])
+        groups = db.get_all_groups(conn, account_name)
 
-        with conn.cursor() as cur:
-            cur.execute(
-                f"""SELECT id, full_name, given_name, middle_name, family_name,
-                           prefix, suffix, organization, birthday, account, photo_url
-                    FROM contacts {where_clause}{search_clause}
-                    ORDER BY full_name
-                    LIMIT 200""",
-                params,
-            )
-            rows = cur.fetchall()
+        if group:
+            rows = db.get_contacts_by_group_uid(conn, account_name, group)
+            search_title = None
+            for g in groups:
+                if g["uid"] == group:
+                    search_title = g["name"]
+                    break
+        else:
+            where_clause, params = _account_filter_clause(account_name)
+            search_clause = ""
+            if search:
+                search_op = "AND" if where_clause else "WHERE"
+                search_clause = f" {search_op} (full_name LIKE %s OR given_name LIKE %s OR family_name LIKE %s OR organization LIKE %s)"
+                like = f"%{search}%"
+                params.extend([like, like, like, like])
+
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"""SELECT id, full_name, given_name, middle_name, family_name,
+                               prefix, suffix, organization, birthday, account, photo_url
+                        FROM contacts {where_clause}{search_clause}
+                        ORDER BY full_name
+                        LIMIT 200""",
+                    params,
+                )
+                rows = cur.fetchall()
+            search_title = None
 
     for row in rows:
         if not row.get("full_name"):
@@ -551,6 +567,8 @@ def web_search(
             "account_name": account_name or "alle Accounts",
             "contacts": rows,
             "search": search or "",
+            "groups": groups,
+            "search_title": search_title,
         },
     )
 

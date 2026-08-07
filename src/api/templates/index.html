@@ -182,7 +182,7 @@
         <form class="search-form" method="get" action="/search">
             <input type="text" name="search" value="{{ search }}" placeholder="Suche nach Name oder Organisation...">
             <button type="submit">Suchen</button>
-            {% if search %}
+            {% if search or search_title %}
             <a href="/search">Zurücksetzen</a>
             {% endif %}
         </form>

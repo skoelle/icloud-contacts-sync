@@ -45,6 +45,29 @@
         gap: 0.5rem;
     }
 
+    .group-cloud {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        margin-bottom: 1rem;
+    }
+
+    .group-tag {
+        display: inline-block;
+        padding: 0.25rem 0.6rem;
+        background: #e7f3ff;
+        color: #0066cc;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        text-decoration: none;
+        transition: background 0.15s ease;
+    }
+
+    .group-tag:hover {
+        background: #d0e8ff;
+        text-decoration: underline;
+    }
+
     @media (max-width: 1450px) {
         .special-searches-box {
             display: none;
@@ -52,6 +75,14 @@
     }
 </style>
 <div class="special-searches-box">
+    {% if groups %}
+    <div class="sidebar-section-title">Gruppen</div>
+    <div class="group-cloud">
+        {% for g in groups %}
+        <a href="/search?group={{ g.uid|urlquote }}" class="group-tag">{{ g.name or '(Ohne Name)' }}</a>
+        {% endfor %}
+    </div>
+    {% endif %}
     <div class="sidebar-section-title">Special Searches</div>
     <div class="sidebar-section-list">
         <a href="/search/special?type=no_photo" class="special-search-link">ohne Bild</a>
