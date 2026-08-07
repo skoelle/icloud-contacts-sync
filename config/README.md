@@ -15,6 +15,10 @@ Felder pro Account:
   `Remote-User`-Header an die Web-Ansicht/API durchreicht. Dieser Wert
   bestimmt, welchen Account ein eingeloggter Benutzer in der
   Web-Ansicht sieht.
+- `healthcheck_url` (optional): URL, die nach jedem erfolgreichen
+  Sync-Lauf dieses Accounts aufgerufen wird (z.B. für Uptime-Monitoring
+  wie Healthchecks.io). Bei Sync-Fehlern wird die URL nicht aufgerufen.
+  Leer lassen oder weglassen, um deaktiviert.
 
 Optionales Feld `admins` (Liste von `authelia_user`-Werten): diese
 Benutzer sehen in der Web-Ansicht/API die Kontakte aller Accounts,

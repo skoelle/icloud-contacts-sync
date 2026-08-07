@@ -39,7 +39,7 @@ außerhalb des Apple-Ökosystems.
   ```json
   {
     "accounts": [
-      { "name": "markus", "apple_email": "markus@icloud.com", "apple_app_password": "xxxx-xxxx-xxxx-xxxx", "authelia_user": "mmustermann" },
+      { "name": "markus", "apple_email": "markus@icloud.com", "apple_app_password": "xxxx-xxxx-xxxx-xxxx", "authelia_user": "mmustermann", "healthcheck_url": "https://healthchecks.example.de/ping/abc123" },
       { "name": "partner", "apple_email": "partner@icloud.com", "apple_app_password": "yyyy-yyyy-yyyy-yyyy", "authelia_user": "pmustermann" }
     ],
     "admins": ["mmustermann"]
@@ -77,6 +77,13 @@ außerhalb des Apple-Ökosystems.
   mehr statt (Unterschied zu v1).
 - Vorteil bei 2.000+ Kontakten: reguläre 15-Minuten-Läufe übertragen nur
   die tatsächlichen Änderungen, nicht den kompletten Bestand.
+- **Healthcheck-URL**: Das optionale Feld `healthcheck_url` pro Account
+  in `accounts.json` wird nach jedem erfolgreichen Sync-Lauf dieses
+  Accounts per `GET` aufgerufen (Timeout 10 Sekunden). Dient dem
+  Uptime-Monitoring (z.B. Healthchecks.io, Uptime Kuma). Bei
+  Sync-Fehlern oder wenn das Feld leer/fehlend ist, wird kein Aufruf
+  ausgeführt. Fehler beim Aufruf werden geloggt, brechen den
+  Sync-Prozess aber nicht ab.
 
 ## 5. Datenmodell (MariaDB)
 

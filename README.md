@@ -33,7 +33,10 @@ vim config/accounts.json
 ```
 
 Trage für jede Apple-ID einen Eintrag mit eindeutigem `name`,
-`apple_email`, `apple_app_password` und `authelia_user` ein. Diese Datei
+`apple_email`, `apple_app_password` und `authelia_user` ein. Optional
+kann pro Account eine `healthcheck_url` konfiguriert werden, die nach
+jedem erfolgreichen Sync aufgerufen wird (z.B. für Uptime-Monitoring).
+Diese Datei
 bleibt lokal auf dem Host, sie ist in `.gitignore` ausgeschlossen und
 wird nur als Volume in den Container gemountet.
 
