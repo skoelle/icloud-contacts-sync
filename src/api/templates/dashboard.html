@@ -242,56 +242,6 @@
         .search-form button:hover {
             background: #0055aa;
         }
-
-        .special-searches-box {
-            position: fixed;
-            top: 136px;
-            right: 2rem;
-            width: 280px;
-            background: #fff;
-            border-radius: 8px;
-            padding: 1rem 1.25rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            max-height: calc(100vh - 4rem);
-            overflow-y: auto;
-        }
-
-        .special-search-link {
-            display: block;
-            padding: 0.75rem;
-            background: #f8f9fa;
-            border-radius: 6px;
-            color: #0066cc;
-            text-decoration: none;
-            font-size: 0.875rem;
-            transition: background 0.15s ease;
-        }
-
-        .special-search-link:hover {
-            background: #e7f3ff;
-            text-decoration: underline;
-        }
-
-        .sidebar-section-title {
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #888;
-            margin-bottom: 0.75rem;
-        }
-
-        .sidebar-section-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        @media (max-width: 1450px) {
-            .special-searches-box {
-                display: none;
-            }
-        }
     </style>
 </head>
 <body>
@@ -379,14 +329,7 @@
             {% endif %}
         </div>
 
-        <div class="special-searches-box">
-            <div class="sidebar-section-title">Special Searches</div>
-            <div class="sidebar-section-list">
-                <a href="/search/special?type=no_photo" class="special-search-link">ohne Bild</a>
-                <a href="/search/special?type=no_city" class="special-search-link">ohne City</a>
-                <a href="/search/special?type=no_social" class="special-search-link">ohne Social</a>
-            </div>
-        </div>
+        {% include "_sidebar.html" %}
     </div>
 </body>
 </html>
