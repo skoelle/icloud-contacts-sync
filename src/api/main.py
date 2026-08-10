@@ -56,7 +56,7 @@ def _fmt_ts(dt) -> str | None:
 
 def _row_to_contact_out(row: dict, group_names: list[str] | None = None) -> dict:
     row = dict(row)
-    for field in ["emails", "phones", "addresses", "urls", "social_profiles", "categories"]:
+    for field in ["emails", "phones", "addresses", "urls", "social_profiles", "related_names", "categories"]:
         raw = row.get(field)
         row[field] = json.loads(raw) if raw else []
     if not row.get("full_name"):
@@ -134,7 +134,7 @@ def get_contact(contact_id: int, current_user: str = Depends(get_current_user)):
         with conn.cursor() as cur:
             cur.execute(
                 f"""SELECT id, account, uid, full_name, prefix, given_name, middle_name, family_name, suffix, organization,
-                           job_title, birthday, notes, photo_url, emails, phones, addresses, urls, social_profiles, categories, updated_at
+                           job_title, birthday, notes, photo_url, emails, phones, addresses, urls, social_profiles, related_names, categories, updated_at
                     FROM contacts {where_clause} {id_clause}""",
                 params + [contact_id],
             )
@@ -625,7 +625,7 @@ def web_contact(
         with conn.cursor() as cur:
             cur.execute(
                 f"""SELECT id, account, uid, full_name, prefix, given_name, middle_name, family_name, suffix, organization,
-                           job_title, birthday, notes, photo_url, emails, phones, addresses, urls, social_profiles, categories, updated_at
+                           job_title, birthday, notes, photo_url, emails, phones, addresses, urls, social_profiles, related_names, categories, updated_at
                     FROM contacts {where_clause} {id_clause}""",
                 params + [contact_id],
             )

@@ -124,6 +124,17 @@ def parse_vcard(raw_text: str, account: str, etag: str | None = None) -> dict | 
 
     categories = [c.strip() for c in vcard.categories.value] if hasattr(vcard, "categories") else []
 
+    related_names = []
+    for r in vcard.contents.get("related", []):
+        params = getattr(r, "params", {})
+        type_val = params.get("TYPE") or params.get("type") or "other"
+        if isinstance(type_val, list):
+            type_val = type_val[0] if type_val else "other"
+        related_names.append({
+            "type": type_val,
+            "value": r.value if r.value else "",
+        })
+
     photo_url = None
     photo_base64 = None
     if hasattr(vcard, "photo"):
@@ -168,7 +179,7 @@ def parse_vcard(raw_text: str, account: str, etag: str | None = None) -> dict | 
         "addresses": json.dumps(addresses, ensure_ascii=False),
         "urls": json.dumps(urls, ensure_ascii=False),
         "social_profiles": json.dumps(social_profiles, ensure_ascii=False),
-        "related_names": json.dumps([], ensure_ascii=False),
+        "related_names": json.dumps(related_names, ensure_ascii=False),
         "categories": json.dumps(categories, ensure_ascii=False),
         "raw_vcard": raw_text,
         "source": "icloud",

@@ -25,6 +25,7 @@ class ContactOut(BaseModel):
     addresses: list
     urls: list
     social_profiles: list
+    related_names: list
     categories: list
     groups: list[str] = []
     updated_at: str

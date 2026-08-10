@@ -436,6 +436,20 @@
                 </div>
                 {% endif %}
 
+                {% if contact.related_names %}
+                <div class="section">
+                    <div class="section-title">Beziehungen</div>
+                    <div class="tiles-grid">
+                        {% for rn in contact.related_names %}
+                        <div class="tile">
+                            <div class="tile-label">{{ rn.type }}</div>
+                            <div class="tile-value">{{ rn.value }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
                 {% if contact.categories %}
                 <div class="section">
                     <div class="section-title">Kategorien</div>
