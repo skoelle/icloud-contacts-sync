@@ -363,9 +363,9 @@ def web_dashboard(
             last_sync_with_changes = None
 
     return templates.TemplateResponse(
+        request,
         "dashboard.html",
         {
-            "request": request,
             "current_user": current_user,
             "is_admin": is_admin,
             "show_all": show_all,
@@ -392,9 +392,9 @@ def web_admin(
 
     show_all = request.session.get("show_all", False)
     return templates.TemplateResponse(
+        request,
         "admin.html",
         {
-            "request": request,
             "current_user": current_user,
             "show_all": show_all,
         },
@@ -428,9 +428,9 @@ def admin_test_send(
         Config.validate_mailer()
     except RuntimeError as exc:
         return templates.TemplateResponse(
+            request,
             "admin.html",
             {
-                "request": request,
                 "current_user": current_user,
                 "show_all": request.session.get("show_all", False),
                 "error": str(exc),
@@ -442,9 +442,9 @@ def admin_test_send(
     mail_accounts = [a for a in accounts if a.birthday_mail_to]
     if not mail_accounts:
         return templates.TemplateResponse(
+            request,
             "admin.html",
             {
-                "request": request,
                 "current_user": current_user,
                 "show_all": request.session.get("show_all", False),
                 "error": "Keine Accounts mit birthday_mail_to konfiguriert",
@@ -456,9 +456,9 @@ def admin_test_send(
         target = db.get_most_common_birthday(conn)
         if target is None:
             return templates.TemplateResponse(
+                request,
                 "admin.html",
                 {
-                    "request": request,
                     "current_user": current_user,
                     "show_all": request.session.get("show_all", False),
                     "error": "Keine Kontakte mit Geburtstag in der Datenbank",
@@ -482,9 +482,9 @@ def admin_test_send(
 
     if errors:
         return templates.TemplateResponse(
+            request,
             "admin.html",
             {
-                "request": request,
                 "current_user": current_user,
                 "show_all": request.session.get("show_all", False),
                 "error": f"Versand fehlgeschlagen: {'; '.join(errors)}",
@@ -493,9 +493,9 @@ def admin_test_send(
         )
 
     return templates.TemplateResponse(
+        request,
         "admin.html",
         {
-            "request": request,
             "current_user": current_user,
             "show_all": request.session.get("show_all", False),
             "success": f"Test-Mails für {target.strftime('%d.%m.%Y')} gesendet ({sent_count} Accounts).",
@@ -535,9 +535,9 @@ def web_search_special(
             row["full_name"] = db._build_full_name(row)
 
     return templates.TemplateResponse(
+        request,
         "index.html",
         {
-            "request": request,
             "current_user": current_user,
             "is_admin": is_admin,
             "show_all": show_all,
@@ -595,9 +595,9 @@ def web_search(
             row["full_name"] = db._build_full_name(row)
 
     return templates.TemplateResponse(
+        request,
         "index.html",
         {
-            "request": request,
             "current_user": current_user,
             "is_admin": is_admin,
             "show_all": show_all,
@@ -674,9 +674,9 @@ def web_contact(
         resolved_links.append({"label": link["label"], "url": url})
 
     return templates.TemplateResponse(
+        request,
         "contact.html",
         {
-            "request": request,
             "current_user": current_user,
             "is_admin": is_admin,
             "show_all": show_all,
