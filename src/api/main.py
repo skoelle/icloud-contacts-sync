@@ -70,19 +70,19 @@ def _enrich_related_names(conn, contact: dict) -> None:
     related = contact.get("related_names", [])
     if not related:
         return
-    uids = [r["value"] for r in related if r.get("value")]
-    if not uids:
+    names = list({r["value"] for r in related if r.get("value")})
+    if not names:
         return
-    resolved = db.resolve_related_names(conn, contact["account"], uids)
+    resolved = db.resolve_related_names(conn, contact["account"], names)
     for r in related:
-        uid = r.get("value", "")
-        info = resolved.get(uid)
+        name = r.get("value", "")
+        info = resolved.get(name)
         if info:
             r["id"] = info["id"]
             r["name"] = info["name"]
         else:
             r["id"] = None
-            r["name"] = uid
+            r["name"] = name
 
 
 def _account_filter_clause(account_name: str | None) -> tuple[str, list]:

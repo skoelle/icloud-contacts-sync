@@ -383,16 +383,29 @@ def get_groups_for_contact(conn, account: str, member_uid: str) -> list[dict]:
         return cur.fetchall()
 
 
-def resolve_related_names(conn, account: str, uids: list[str]) -> dict[str, dict]:
-    if not uids:
+def resolve_related_names(conn, account: str, names: list[str]) -> dict[str, dict]:
+    if not names:
         return {}
-    placeholders = ", ".join(["%s"] * len(uids))
+    conditions = []
+    params: list = [account]
+    for name in names:
+        conditions.append("full_name = %s")
+        params.append(name)
+        parts = name.strip().split()
+        if len(parts) >= 2:
+            conditions.append("(given_name = %s AND family_name = %s)")
+            params.extend([parts[0], parts[-1]])
+    placeholders = " OR ".join(conditions)
     with conn.cursor() as cur:
         cur.execute(
-            f"SELECT uid, id, full_name FROM contacts WHERE account = %s AND uid IN ({placeholders})",
-            [account] + uids,
+            f"SELECT full_name, id, given_name, family_name FROM contacts WHERE account = %s AND ({placeholders})",
+            params,
         )
-        return {row["uid"]: {"id": row["id"], "name": row["full_name"]} for row in cur.fetchall()}
+        result = {}
+        for row in cur.fetchall():
+            fn = row["full_name"] or f"{row.get('given_name') or ''} {row.get('family_name') or ''}".strip()
+            result[fn] = {"id": row["id"], "name": fn}
+        return result
 
 
 def get_group_count(conn, account: str | None) -> int:
