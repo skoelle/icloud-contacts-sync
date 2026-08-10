@@ -144,7 +144,37 @@ python3 sync.py
 python3 mailer.py
 ```
 
-## 10. CI/CD
+## 10. Demo-Modus (Screenshot/Showcase)
+
+Lokale Demo mit SQLite-Backend und Fake-Kontakten, ohne MariaDB,
+Apple-IDs oder Docker. Zeigt Dashboard, Kontakt-Detailseite und
+Gruppen-Übersicht mit farbigen UI-Avatar-Bildern.
+
+### Starten
+
+```bash
+./demo.sh
+```
+
+Das Script erstellt automatisch ein virtuelles Umfeld
+(`.venv-demo/`), installiert die Dependencies und startet den
+Server auf `0.0.0.0:8000`.
+
+### Was angezeigt wird
+
+- Dashboard mit 6 Kontakten, Geburtstagen der nächsten 7 Tage,
+  2 Gruppen ("Familie", "Arbeit") und成功stem Sync-Status
+- Kontakt-Detailseite mit E-Mail, Telefon, Adresse, Foto
+- Farbige Initialen-Avatare via ui-avatars.com
+
+### Technisches
+
+- SQLite-Datenbank (`demo.db`) wird bei jedem Start frisch angelegt
+- Kein `.env`, kein `accounts.json` nötig
+- Templates und CSS werden aus `src/api/` wiederverwendet
+- `.venv-demo/` und `demo.db` sind in `.gitignore` eingetragen
+
+## 11. CI/CD
 
 - Jeder Push auf `main` baut automatisch ein neues Image und pusht es
   nach `ghcr.io/<owner>/icloud-contacts-sync`.

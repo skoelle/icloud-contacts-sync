@@ -37,6 +37,8 @@ config/
   accounts.json      — Per-account credentials (NOT in git, volume-mounted)
 docker/
   entrypoint.sh      — Starts scheduler.py (or exec's custom command)
+demo.py              — SQLite demo app with fake contacts (screenshot/showcase)
+demo.sh              — Launches demo: creates venv, installs deps, starts server
 ```
 
 ## Key Files
@@ -50,6 +52,8 @@ docker/
 | `src/db.py` | All MariaDB queries |
 | `sql/schema.sql` | Canonical schema definition |
 | `.env.example` | All supported environment variables |
+| `demo.py` | SQLite demo app with fake contacts (screenshot/showcase) |
+| `demo.sh` | Launches demo: creates venv, installs deps, starts server |
 
 ## Commands
 
@@ -82,6 +86,14 @@ docker compose build
 ```bash
 docker compose up -d
 ```
+
+### Run demo (no MariaDB needed)
+
+```bash
+./demo.sh
+```
+
+Starts SQLite-based demo on `0.0.0.0:8000` with 6 fake contacts.
 
 ## Code Conventions
 

@@ -1,6 +1,8 @@
 .env
 config/accounts.json
 .venv/
+.venv-demo/
+demo.db
 __pycache__/
 *.pyc
 .DS_Store
