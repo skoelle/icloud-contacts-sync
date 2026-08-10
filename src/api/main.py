@@ -66,6 +66,25 @@ def _row_to_contact_out(row: dict, group_names: list[str] | None = None) -> dict
     return row
 
 
+def _enrich_related_names(conn, contact: dict) -> None:
+    related = contact.get("related_names", [])
+    if not related:
+        return
+    uids = [r["value"] for r in related if r.get("value")]
+    if not uids:
+        return
+    resolved = db.resolve_related_names(conn, contact["account"], uids)
+    for r in related:
+        uid = r.get("value", "")
+        info = resolved.get(uid)
+        if info:
+            r["id"] = info["id"]
+            r["name"] = info["name"]
+        else:
+            r["id"] = None
+            r["name"] = uid
+
+
 def _account_filter_clause(account_name: str | None) -> tuple[str, list]:
     if account_name is None:
         return "", []
@@ -146,7 +165,9 @@ def get_contact(contact_id: int, current_user: str = Depends(get_current_user)):
         groups = db.get_groups_for_contact(conn, row["account"], row["uid"])
         group_names = [g["name"] for g in groups if g.get("name")]
 
-    return _row_to_contact_out(row, group_names=group_names)
+        contact = _row_to_contact_out(row, group_names=group_names)
+        _enrich_related_names(conn, contact)
+    return contact
 
 
 @app.get("/api/contacts/birthdays/today", response_model=list[ContactOut])
@@ -638,7 +659,8 @@ def web_contact(
         groups = db.get_groups_for_contact(conn, row["account"], row["uid"])
         group_names = [g["name"] for g in groups if g.get("name")]
 
-    contact = _row_to_contact_out(row, group_names=group_names)
+        contact = _row_to_contact_out(row, group_names=group_names)
+        _enrich_related_names(conn, contact)
 
     homecity = ""
     workcity = ""

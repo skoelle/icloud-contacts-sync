@@ -130,9 +130,12 @@ def parse_vcard(raw_text: str, account: str, etag: str | None = None) -> dict | 
         type_val = params.get("TYPE") or params.get("type") or "other"
         if isinstance(type_val, list):
             type_val = type_val[0] if type_val else "other"
+        value = r.value if r.value else ""
+        if value.startswith(_MEMBER_PREFIX):
+            value = value[len(_MEMBER_PREFIX):]
         related_names.append({
             "type": type_val,
-            "value": r.value if r.value else "",
+            "value": value,
         })
 
     photo_url = None

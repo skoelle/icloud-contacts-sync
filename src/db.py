@@ -383,6 +383,18 @@ def get_groups_for_contact(conn, account: str, member_uid: str) -> list[dict]:
         return cur.fetchall()
 
 
+def resolve_related_names(conn, account: str, uids: list[str]) -> dict[str, dict]:
+    if not uids:
+        return {}
+    placeholders = ", ".join(["%s"] * len(uids))
+    with conn.cursor() as cur:
+        cur.execute(
+            f"SELECT uid, id, full_name FROM contacts WHERE account = %s AND uid IN ({placeholders})",
+            [account] + uids,
+        )
+        return {row["uid"]: {"id": row["id"], "name": row["full_name"]} for row in cur.fetchall()}
+
+
 def get_group_count(conn, account: str | None) -> int:
     where_clause, params = _account_filter_clause(account)
     with conn.cursor() as cur:

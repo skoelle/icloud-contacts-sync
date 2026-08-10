@@ -443,7 +443,9 @@
                         {% for rn in contact.related_names %}
                         <div class="tile">
                             <div class="tile-label">{{ rn.type }}</div>
-                            <div class="tile-value">{{ rn.value }}</div>
+                            <div class="tile-value">
+                                {% if rn.id %}<a href="/contacts/{{ rn.id }}">{{ rn.name }}</a>{% else %}{{ rn.name }}{% endif %}
+                            </div>
                         </div>
                         {% endfor %}
                     </div>
