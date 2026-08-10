@@ -6,6 +6,10 @@ Synct alle Kontakte mehrerer iCloud-Accounts per CardDAV Delta-Sync
 Geburtstage. Für den vollständigen technischen Hintergrund siehe
 [SPEC.md](./SPEC.md).
 
+[![Dashboard](docs/screenshot1_thumbnail.png)](docs/screenshot1.png)
+[![Contact detail](docs/screenshot2_thumbnail.png)](docs/screenshot2.png)
+
+
 ## Voraussetzungen
 
 - Eine oder mehrere Apple-IDs mit aktivierter Zwei-Faktor-Authentifizierung.
