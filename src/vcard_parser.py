@@ -124,18 +124,36 @@ def parse_vcard(raw_text: str, account: str, etag: str | None = None) -> dict | 
 
     categories = [c.strip() for c in vcard.categories.value] if hasattr(vcard, "categories") else []
 
+    _APPLE_LABEL_MAP = {
+        "father": "Vater", "mother": "Mutter", "parent": "Elternteil",
+        "son": "Sohn", "daughter": "Tochter", "child": "Kind",
+        "spouse": "Ehepartner", "wife": "Ehefrau", "husband": "Ehemann",
+        "partner": "Partner", "sibling": "Geschwister", "brother": "Bruder", "sister": "Schwester",
+        "friend": "Freund", "femalefriend": "Freundin", "malefriend": "Freund",
+        "colleague": "Kollege", "coworker": "Mitarbeiter",
+        "manager": "Vorgesetzter", "assistant": "Assistent",
+        "related": "Verwandter", "other": "Sonstige",
+    }
+
     related_names = []
-    for r in vcard.contents.get("related", []):
-        params = getattr(r, "params", {})
-        type_val = params.get("TYPE") or params.get("type") or "other"
-        if isinstance(type_val, list):
-            type_val = type_val[0] if type_val else "other"
-        value = r.value if r.value else ""
-        if value.startswith(_MEMBER_PREFIX):
-            value = value[len(_MEMBER_PREFIX):]
+    abrelated = vcard.contents.get("x-abrelatednames", [])
+    ablabels = vcard.contents.get("x-ablabel", [])
+    labels_by_group = {}
+    for lbl in ablabels:
+        labels_by_group[getattr(lbl, "group", "")] = lbl.value
+    for r in abrelated:
+        group = getattr(r, "group", "")
+        raw_label = labels_by_group.get(group, "")
+        if raw_label.startswith("_$!<") and raw_label.endswith(">!$_"):
+            key = raw_label[4:-4].lower()
+            label = _APPLE_LABEL_MAP.get(key, key.capitalize())
+        elif raw_label:
+            label = raw_label
+        else:
+            label = "Sonstige"
         related_names.append({
-            "type": type_val,
-            "value": value,
+            "type": label,
+            "value": r.value if r.value else "",
         })
 
     photo_url = None
