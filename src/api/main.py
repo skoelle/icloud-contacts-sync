@@ -536,6 +536,7 @@ def web_search_special(
         "no_photo": db.search_contacts_without_photo,
         "no_city": db.search_contacts_without_city,
         "no_social": db.search_contacts_without_social,
+        "last_updated": db.search_contacts_last_updated,
     }.get(type)
 
     if not query_fn:
@@ -545,6 +546,7 @@ def web_search_special(
         "no_photo": "Kontakte ohne Bild",
         "no_city": "Kontakte ohne Stadt",
         "no_social": "Kontakte ohne Social Profil",
+        "last_updated": "Zuletzt aktualisiert",
     }
 
     with db.get_connection() as conn:

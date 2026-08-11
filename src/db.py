@@ -232,6 +232,24 @@ def search_contacts_without_social(conn, account: str | None) -> list[dict]:
         return cur.fetchall()
 
 
+def search_contacts_last_updated(conn, account: str | None) -> list[dict]:
+    where_clause, params = _account_filter_clause(account)
+    op = "AND" if where_clause else "WHERE"
+    with conn.cursor() as cur:
+        cur.execute(
+            f"""SELECT id, full_name, given_name, middle_name, family_name,
+                       prefix, suffix, organization, birthday, account, photo_url
+                FROM contacts {where_clause}
+                {op} given_name IS NOT NULL AND given_name != ''
+                AND family_name IS NOT NULL AND family_name != ''
+                AND family_name != 'X'
+                ORDER BY updated_at DESC
+                LIMIT 200""",
+            params,
+        )
+        return cur.fetchall()
+
+
 def get_most_common_birthday(conn) -> date | None:
     with conn.cursor() as cur:
         cur.execute(
