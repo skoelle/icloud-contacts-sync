@@ -107,6 +107,23 @@ def main():
     last_sync = datetime.now(Config.TIMEZONE)
     next_mailer = next_run_time(MAIL_SEND_HOUR)
 
+    if MAILER_ENABLED:
+        try:
+            today = datetime.now(Config.TIMEZONE).date()
+            with db.get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "SELECT 1 FROM birthday_mail_log WHERE sent_date = %s LIMIT 1",
+                        (today,),
+                    )
+                    already_sent = cur.fetchone() is not None
+            if not already_sent and next_mailer.date() > today:
+                logger.info("Mailer fuer heute noch nicht gesendet — hole nach")
+                run_mailer()
+                next_mailer = next_run_time(MAIL_SEND_HOUR)
+        except Exception:
+            logger.exception("Pruefung/Nachholen des Mailers fehlgeschlagen")
+
     while not _shutdown:
         now = datetime.now(Config.TIMEZONE)
 
