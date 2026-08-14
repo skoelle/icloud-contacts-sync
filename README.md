@@ -1,4 +1,4 @@
-# icloud-contacts-sync
+# 🔄 icloud-contacts-sync
 
 Synct alle Kontakte mehrerer iCloud-Accounts per CardDAV Delta-Sync
 (RFC 6578) automatisiert alle 15 Minuten in eine MariaDB-Datenbank
@@ -10,17 +10,17 @@ Geburtstage. Für den vollständigen technischen Hintergrund siehe
 [![Contact detail](docs/screenshot2_thumbnail.png)](docs/screenshot2.png)
 
 
-## Voraussetzungen
+## 📋 Voraussetzungen
 
-- Eine oder mehrere Apple-IDs mit aktivierter Zwei-Faktor-Authentifizierung.
-- Für jede Apple-ID ein app-spezifisches Passwort.
-- Eine erreichbare MariaDB-Instanz mit vorbereiteter Datenbank.
-- Ein SMTP-Relay (z. B. dein Mailprovider oder ein lokaler Relay) für
+- 🔐 Eine oder mehrere Apple-IDs mit aktivierter Zwei-Faktor-Authentifizierung.
+- 🔑 Für jede Apple-ID ein app-spezifisches Passwort.
+- 🗄️ Eine erreichbare MariaDB-Instanz mit vorbereiteter Datenbank.
+- 📬 Ein SMTP-Relay (z. B. dein Mailprovider oder ein lokaler Relay) für
   den Geburtstags-Mailer.
-- Docker bzw. Docker Compose auf dem Zielhost (z. B. der Docker-Host auf
+- 🐳 Docker bzw. Docker Compose auf dem Zielhost (z. B. der Docker-Host auf
   deinem Proxmox-Host).
 
-## 1. App-spezifische Passwörter erzeugen
+## 🔑 1. App-spezifische Passwörter erzeugen
 
 Für jede Apple-ID, die du syncen willst:
 
@@ -29,7 +29,7 @@ Für jede Apple-ID, die du syncen willst:
 3. Ein neues Passwort mit sprechendem Namen erzeugen (z. B.
    `contacts-sync-debian`) und sofort sichern.
 
-## 2. Multi-User-Konfiguration anlegen
+## ⚙️ 2. Multi-User-Konfiguration anlegen
 
 ```
 cp config/accounts.json.example config/accounts.json
@@ -46,7 +46,7 @@ wird nur als Volume in den Container gemountet.
 
 Siehe `config/README.md` für eine vollständige Beschreibung der Felder.
 
-## 3. Datenbank vorbereiten
+## 🗄️ 3. Datenbank vorbereiten
 
 Falls Datenbank und Benutzer noch nicht existieren, führe dieses Skript einmalig aus:
 
@@ -54,7 +54,7 @@ Falls Datenbank und Benutzer noch nicht existieren, führe dieses Skript einmali
 mysql -u root -p < sql/db-and-user.sql
 ```
 
-## 4. Umgebungsvariablen konfigurieren
+## 🔧 4. Umgebungsvariablen konfigurieren
 
 ```
 cp .env.example .env
@@ -66,7 +66,7 @@ Mailer nutzen willst) `SMTP_HOST` und `MAIL_FROM` ein. Die
 Empfänger-Adresse wird pro Account in `accounts.json` unter
 `birthday_mail_to` konfiguriert.
 
-## 5. Image beziehen
+## 🐳 5. Image beziehen
 
 ```
 docker login ghcr.io -u DEIN_GITHUB_USER
@@ -76,7 +76,7 @@ Passe in `docker-compose.yml` den Image-Namen
 (`ghcr.io/DEIN_GITHUB_USER/icloud-contacts-sync:latest`) auf deinen
 tatsächlichen GitHub-Namespace an.
 
-## 6. Starten
+## 🚀 6. Starten
 
 ```
 docker compose up -d
@@ -87,7 +87,7 @@ initialer Sync ausgeführt (kein gespeicherter sync-token vorhanden).
 Danach laufen alle 15 Minuten nur noch Delta-Syncs, die ausschließlich
 Änderungen seit dem letzten Lauf übertragen.
 
-## 7. Logs und Status prüfen
+## 📊 7. Logs und Status prüfen
 
 ```
 docker logs -f icloud-contacts-sync
@@ -116,7 +116,7 @@ SELECT account, sent_date, contacts_count, sent_at FROM birthday_mail_log
 ORDER BY sent_date DESC LIMIT 10;
 ```
 
-## 8. Geburtstags-Mailer
+## 🎂 8. Geburtstags-Mailer
 
 - Läuft automatisch täglich um die in `MAIL_SEND_HOUR` konfigurierte
   Stunde (Default 7 Uhr) innerhalb desselben Containers.
@@ -133,7 +133,7 @@ ORDER BY sent_date DESC LIMIT 10;
   pro Account, solange bereits ein Eintrag in `birthday_mail_log` für
   heute und diesen Account existiert.
 
-## 9. Lokale Entwicklung (ohne Docker)
+## 💻 9. Lokale Entwicklung (ohne Docker)
 
 ```
 python3 -m venv .venv
@@ -144,7 +144,7 @@ python3 sync.py
 python3 mailer.py
 ```
 
-## 10. Demo-Modus (Screenshot/Showcase)
+## 🎬 10. Demo-Modus (Screenshot/Showcase)
 
 Lokale Demo mit SQLite-Backend und Fake-Kontakten, ohne MariaDB,
 Apple-IDs oder Docker. Zeigt Dashboard, Kontakt-Detailseite und
@@ -153,28 +153,28 @@ Gruppen-Übersicht mit farbigen UI-Avatar-Bildern.
 ### Starten
 
 ```bash
-./demo.sh
+▶️ ./demo.sh
 ```
 
 Das Script erstellt automatisch ein virtuelles Umfeld
 (`.venv-demo/`), installiert die Dependencies und startet den
 Server auf `0.0.0.0:8000`.
 
-### Was angezeigt wird
+### 👀 Was angezeigt wird
 
 - Dashboard mit 6 Kontakten, Geburtstagen der nächsten 7 Tage,
   2 Gruppen ("Familie", "Arbeit") und成功stem Sync-Status
 - Kontakt-Detailseite mit E-Mail, Telefon, Adresse, Foto
 - Farbige Initialen-Avatare via ui-avatars.com
 
-### Technisches
+### 🔧 Technisches
 
 - SQLite-Datenbank (`demo.db`) wird bei jedem Start frisch angelegt
 - Kein `.env`, kein `accounts.json` nötig
 - Templates und CSS werden aus `src/api/` wiederverwendet
 - `.venv-demo/` und `demo.db` sind in `.gitignore` eingetragen
 
-## 11. CI/CD
+## ⚡ 11. CI/CD
 
 - Jeder Push auf `main` baut automatisch ein neues Image und pusht es
   nach `ghcr.io/<owner>/icloud-contacts-sync`.
@@ -185,14 +185,14 @@ Server auf `0.0.0.0:8000`.
   reproduzierbar und unabhängig von neuen Ruff-Defaults.
 - Details siehe SPEC.md, Abschnitt 9.
 
-## Bekannte Grenzen und geplante Erweiterungen
+## ⚠️ Bekannte Grenzen und geplante Erweiterungen
 
 - Delta-Sync reduziert die übertragene Datenmenge stark, ersetzt aber
   keine vollständige Historie: ein gelöschter iCloud-Kontakt wird auch
   aus MariaDB entfernt, ohne Archiv.
 - Nur iCloud als Quelle, Google/Microsoft sind nicht Teil dieses Repos.
 
-## Kontaktruppen
+## 👥 Kontaktruppen
 
 iCloud-Länder speichern Gruppen als eigene vCards mit
 `X-ADDRESSBOOKSERVER-KIND:group`. Diese werden beim Sync automatisch
@@ -211,7 +211,7 @@ entfernt (`ON DELETE CASCADE`). Wird ein Mitglied-Kontakt gelöscht,
 wird der Member-Eintrag in allen Gruppen ebenfalls entfernt (manueller
 Cleanup im Sync-Code). Die Gruppe selbst bleibt erhalten.
 
-### Migration bei erstem Deploy
+### 🔄 Migration bei erstem Deploy
 
 Bei Bestands-DBs lagen Gruppen bisher als normale Kontakte in der
 `contacts`-Tabelle. Nach dem Deploy müssen diese einmalig bereinigt
@@ -224,14 +224,14 @@ werden:
 Beim nächsten Sync-Lauf werden alle vCards neu klassifiziziert —
 Gruppen landen in `groups`, Kontakte bleiben in `contacts`.
 
-## 11. Web-Ansicht und API (interner Zugriff über Authelia)
+## 🌐 11. Web-Ansicht und API (interner Zugriff über Authelia)
 
 Läuft als zweiter Service aus demselben Image, aber mit anderem
 Startbefehl, siehe `docker-compose.yml` (`icloud-contacts-api`). Die API
 selbst hat kein eigenes Login, sie vertraut vollständig dem
 vorgeschalteten Reverse-Proxy mit Authelia.
 
-### Voraussetzung: Reverse-Proxy mit Authelia
+### 🔐 Voraussetzung: Reverse-Proxy mit Authelia
 
 Dein bestehender Reverse-Proxy muss für den Pfad/Host der
 Web-Ansicht einen `auth_request` gegen Authelia ausführen und danach
@@ -250,7 +250,7 @@ location / {
 Falls dein Setup den Benutzernamen unter einem anderen Header liefert,
 passe `AUTH_REMOTE_USER_HEADER` in der `.env` entsprechend an.
 
-### Accounts-Mapping ergänzen
+### 👤 Accounts-Mapping ergänzen
 
 In `config/accounts.json` bekommt jeder Account zusätzlich ein Feld
 `authelia_user`:
@@ -267,7 +267,7 @@ In `config/accounts.json` bekommt jeder Account zusätzlich ein Feld
 Ein Benutzer aus `admins` sieht alle Accounts, alle anderen gemappten
 Benutzer sehen ausschließlich ihren eigenen Account.
 
-### Starten
+### 🚀 Starten
 
 ```
 docker compose up -d icloud-contacts-api
@@ -276,7 +276,7 @@ docker compose up -d icloud-contacts-api
 Der Service läuft nur an `127.0.0.1:8000`, ein direkter externer
 Zugriff ohne den Reverse-Proxy ist damit nicht möglich.
 
-### Endpunkte (Routes)
+### 📍 Endpunkte (Routes)
 
 | Methode | Pfad | Beschreibung |
 |---------|------|--------------|
@@ -298,12 +298,12 @@ Alle Endpunkte (außer `/api/health`) erfordern eine Authentifizierung
 über den `Remote-User`-Header. Nicht-Admins sehen nur die Daten ihres
 eigenen Accounts.
 
-### API kurz testen (lokal auf der Docker-Host, mit Header simuliert)
+### 🧪 API kurz testen (lokal auf der Docker-Host, mit Header simuliert)
 
 ```
 curl -H "Remote-User: mmustermann" http://127.0.0.1:8000/api/contacts
 ```
 
-## License
+## 📄 License
 
 Licensed under the [MIT License](LICENSE) - Copyright (c) 2026 Stefan Koelle (https://stefankoelle.de)
