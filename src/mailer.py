@@ -69,7 +69,10 @@ def build_message(account_name: str, birthdays: list[dict], target_date: date | 
         msg.set_content("Heute hat niemand aus deinen Kontakten Geburtstag.")
         return msg
 
-    msg["Subject"] = f"Geburtstage heute ({today.isoformat()}): {len(birthdays)}"
+    if len(birthdays) == 1:
+        msg["Subject"] = f"Geburtstage heute ({today.isoformat()}): {birthdays[0]['full_name']}"
+    else:
+        msg["Subject"] = f"Geburtstage heute ({today.isoformat()}): {len(birthdays)}"
 
     plain_lines = [f"Heutige Geburtstage ({today.isoformat()}):", ""]
     for b in birthdays:
@@ -154,7 +157,7 @@ def build_message(account_name: str, birthdays: list[dict], target_date: date | 
           <tr>
             <td style="padding:16px;">
               <h1 style="font-size:20px;font-weight:600;color:#222;margin:0;">Geburtstage heute</h1>
-              <p style="font-size:13px;color:#666;margin:8px 0 16px 0;">{today.strftime('%d.%m.%Y')} · {len(birthdays)} Kontakte</p>
+              <p style="font-size:13px;color:#666;margin:8px 0 16px 0;">{today.strftime('%d.%m.%Y')} · {len(birthdays)} Kontakt{"e" if len(birthdays) != 1 else ""}</p>
               <table width="100%" cellpadding="0" cellspacing="0">
                 {cards_html}
               </table>
