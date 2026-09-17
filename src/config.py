@@ -14,7 +14,7 @@ ICLOUD_BASE_URL = "https://contacts.icloud.com/"
 class Account:
     def __init__(self, name: str, apple_email: str, apple_app_password: str, authelia_user: str | None,
                  custom_links: list[dict] | None = None, healthcheck_url: str = "",
-                 birthday_mail_to: str | None = None):
+                 birthday_mail_to: str | None = None, chat_sender_name: str = ""):
         self.name = name
         self.apple_email = apple_email
         self.apple_app_password = apple_app_password
@@ -22,6 +22,7 @@ class Account:
         self.custom_links = custom_links or []
         self.healthcheck_url = healthcheck_url
         self.birthday_mail_to = birthday_mail_to
+        self.chat_sender_name = chat_sender_name
 
 
 class Config:
@@ -49,6 +50,10 @@ class Config:
     # Authelia liefert den eingeloggten Benutzer per Header, der vom
     # vorgeschalteten nginx/traefik als Remote-User weitergereicht wird.
     AUTH_REMOTE_USER_HEADER = os.environ.get("AUTH_REMOTE_USER_HEADER", "Remote-User")
+
+    CHATAPI_ENABLED = os.environ.get("CHATAPI_ENABLED", "false").lower() == "true"
+    CHATAPI_URL = os.environ.get("CHATAPI_URL", "")
+    CHATAPI_KEY = os.environ.get("CHATAPI_KEY", "")
 
     API_HOST = os.environ.get("API_HOST", "0.0.0.0")
     API_PORT = int(os.environ.get("API_PORT", "8000"))
@@ -104,7 +109,8 @@ class Config:
             custom_links = entry.get("custom_links", [])
             healthcheck_url = entry.get("healthcheck_url", "")
             birthday_mail_to = entry.get("birthday_mail_to") or None
-            accounts.append(Account(name, email, pwd, authelia_user, custom_links, healthcheck_url, birthday_mail_to))
+            chat_sender_name = entry.get("chat_sender_name", "")
+            accounts.append(Account(name, email, pwd, authelia_user, custom_links, healthcheck_url, birthday_mail_to, chat_sender_name))
         return accounts
 
     @classmethod

@@ -122,6 +122,7 @@ See `.env.example` for full list. Key variables:
 - `AUTH_REMOTE_USER_HEADER` — Authelia header name (default: `Remote-User`)
 - `MAILER_ENABLED` — Feature flag for birthday mailer
 - `MAIL_SEND_HOUR` — Hour (0-23) for daily birthday email
+- `CHATAPI_ENABLED` / `CHATAPI_URL` / `CHATAPI_KEY` — Chat-Archive integration (optional)
 
 ## Architecture Notes
 

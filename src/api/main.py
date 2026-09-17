@@ -13,8 +13,9 @@ import secrets
 from datetime import datetime
 from urllib.parse import quote_plus
 
+import requests
 from fastapi import Depends, FastAPI, Query, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
@@ -209,6 +210,51 @@ def contact_count(current_user: str = Depends(get_current_user)):
     with db.get_connection() as conn:
         total = db.get_contact_count(conn, account_name)
     return {"total": total}
+
+
+@app.get("/api/contacts/{contact_id}/messages")
+def get_contact_messages(
+    contact_id: int,
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=200),
+    current_user: str = Depends(get_current_user),
+):
+    if not Config.CHATAPI_ENABLED:
+        return JSONResponse(status_code=404, content={"detail": "Chat-Archive nicht aktiviert"})
+
+    with db.get_connection() as conn:
+        where_clause, params = _account_filter_clause(
+            resolve_account_for_user(current_user)[0]
+        )
+        id_clause = "AND id = %s" if where_clause else "WHERE id = %s"
+        with conn.cursor() as cur:
+            cur.execute(
+                f"SELECT full_name FROM contacts {where_clause} {id_clause}",
+                params + [contact_id],
+            )
+            row = cur.fetchone()
+
+    if not row or not row.get("full_name"):
+        return JSONResponse(status_code=404, content={"detail": "Kontakt nicht gefunden"})
+
+    try:
+        resp = requests.get(
+            f"{Config.CHATAPI_URL.rstrip('/')}/conversation",
+            params={
+                "contact_names": [row["full_name"]],
+                "order": "desc",
+                "offset": offset,
+                "limit": limit,
+            },
+            headers={"X-API-Key": Config.CHATAPI_KEY},
+            timeout=10,
+        )
+        resp.raise_for_status()
+    except requests.RequestException as e:
+        logger.warning("Chat-Archive API Fehler: %s", e)
+        return JSONResponse(status_code=502, content={"detail": "Chat-Archive nicht erreichbar"})
+
+    return resp.json()
 
 
 @app.get("/api/sync-runs", response_model=list[SyncRunOut])
@@ -677,12 +723,14 @@ def web_contact(
             workcity = city
 
     custom_links = []
+    chat_sender_name = ""
     contact_account = contact.get("account")
     if contact_account:
         accounts = Config.load_accounts()
         for acc in accounts:
             if acc.name == contact_account:
                 custom_links = acc.custom_links
+                chat_sender_name = acc.chat_sender_name
                 break
 
     resolved_links = []
@@ -708,5 +756,8 @@ def web_contact(
             "groups": groups,
             "search": search or "",
             "custom_links": resolved_links,
+            "chat_enabled": Config.CHATAPI_ENABLED,
+            "chat_sender_name": chat_sender_name,
+            "contact_id": contact_id,
         },
     )

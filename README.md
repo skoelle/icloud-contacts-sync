@@ -40,7 +40,9 @@ Trage für jede Apple-ID einen Eintrag mit eindeutigem `name`,
 `apple_email`, `apple_app_password`, `authelia_user` und (optional)
 `birthday_mail_to` ein. Optional kann pro Account eine `healthcheck_url`
 konfiguriert werden, die nach jedem erfolgreichen Sync aufgerufen wird
-(z.B. für Uptime-Monitoring). Diese Datei
+(z.B. für Uptime-Monitoring). Optional kann pro Account ein
+`chat_sender_name` konfiguriert werden, um den Namen in der
+Chat-Archive DB zuzuordnen (Details siehe Abschnitt 12). Diese Datei
 bleibt lokal auf dem Host, sie ist in `.gitignore` ausgeschlossen und
 wird nur als Volume in den Container gemountet.
 
@@ -294,6 +296,12 @@ Zugriff ohne den Reverse-Proxy ist damit nicht möglich.
 | `GET` | `/api/groups/{id}/members` | Members einer Gruppe (Kontaktdaten) |
 | `GET` | `/api/sync-runs` | Letzte 50 Sync-Runs (Status, Zeitstempel, Fehler) |
 
+**Chat-Archive (optional):**
+
+| Methode | Pfad | Beschreibung |
+|---------|------|--------------|
+| `GET` | `/api/contacts/{id}/messages` | Chat-Nachrichten eines Kontakts via Chat-Archive API (`?offset=0&limit=50`) |
+
 Alle Endpunkte (außer `/api/health`) erfordern eine Authentifizierung
 über den `Remote-User`-Header. Nicht-Admins sehen nur die Daten ihres
 eigenen Accounts.
@@ -303,6 +311,40 @@ eigenen Accounts.
 ```
 curl -H "Remote-User: mmustermann" http://127.0.0.1:8000/api/contacts
 ```
+
+## 💬 12. Chat-Archive Integration (optional)
+
+Zeigt Chat-Nachrichten (Instagram/Facebook) direkt in der
+Kontakt-Detailseite, mit Infinite Scroll und Messenger-Style Bubbles.
+
+### Voraussetzung
+
+- Eine laufende [Chat-Archive API](https://github.com/stefan-koelle/chat-archive)
+  mit importierten Nachrichten.
+
+### Konfiguration
+
+In `.env`:
+
+```
+CHATAPI_ENABLED=true
+CHATAPI_URL=http://docker-host-pve.fritz.box:8420
+CHATAPI_KEY=change-me
+```
+
+In `config/accounts.json` pro Account das `chat_sender_name` setzen
+(Name wie in der Chat-Archive DB als `sender_name` gespeichert):
+
+```json
+{
+  "name": "iCloud Stefan",
+  "authelia_user": "stefan",
+  "chat_sender_name": "Stefan Koelle"
+}
+```
+
+Der Name wird umlaut-normalisiert verglichen: "Koelle" und "Kölle"
+werden als identisch erkannt.
 
 ## 📄 License
 

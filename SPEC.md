@@ -39,7 +39,7 @@ außerhalb des Apple-Ökosystems.
   ```json
   {
     "accounts": [
-      { "name": "markus", "apple_email": "markus@icloud.com", "apple_app_password": "xxxx-xxxx-xxxx-xxxx", "authelia_user": "mmustermann", "birthday_mail_to": "markus@example.de", "healthcheck_url": "https://healthchecks.example.de/ping/abc123" },
+      { "name": "markus", "apple_email": "markus@icloud.com", "apple_app_password": "xxxx-xxxx-xxxx-xxxx", "authelia_user": "mmustermann", "birthday_mail_to": "markus@example.de", "healthcheck_url": "https://healthchecks.example.de/ping/abc123", "chat_sender_name": "Markus Mustermann" },
       { "name": "partner", "apple_email": "partner@icloud.com", "apple_app_password": "yyyy-yyyy-yyyy-yyyy", "authelia_user": "pmustermann", "birthday_mail_to": "partner@example.de" }
     ],
     "admins": ["mmustermann"]
@@ -152,6 +152,9 @@ Siehe `sql/schema.sql`. Wichtigste Änderungen gegenüber v1:
 | AUTH_REMOTE_USER_HEADER | nein  | Default: Remote-User, Header-Name für Authelia-User |
 | API_HOST              | nein    | Default: 0.0.0.0, Bindungs-Adresse des API-Services |
 | API_PORT              | nein    | Default: 8000, Port des API-Services                |
+| CHATAPI_ENABLED       | nein    | Default: false, aktiviert Chat-Archive Integration  |
+| CHATAPI_URL           | nein    | Basis-URL der Chat-Archive API                      |
+| CHATAPI_KEY           | nein    | API-Key für Chat-Archive Authentifizierung          |
 
 Empfänger-Adresse für Geburtstags-Mails: `birthday_mail_to` pro Account
 in `accounts.json` (keine globale Umgebungsvariable mehr nötig).
@@ -279,6 +282,7 @@ geteilt wird. Getrennt ist nur die **Rolle**, in der der Container läuft.
 | `GET /api/groups/{id}` | Einzelne Gruppe mit aufgelösten Members (Name + UID) |
 | `GET /api/groups/{id}/members` | Nur Members einer Gruppe (Kontaktdaten aufgelöst) |
 | `GET /api/sync-runs` | Sync-Historie (kontospezifisch bzw. global für Admins) |
+| `GET /api/contacts/{id}/messages` | Chat-Nachrichten via Chat-Archive API (optional, `?offset=0&limit=50`) |
 
 ### 12.5 Netzwerkkontext
 
@@ -287,3 +291,27 @@ geteilt wird. Getrennt ist nur die **Rolle**, in der der Container läuft.
 - Externer Zugriff läuft über deinen bestehenden Reverse-Proxy mit
   Authelia im internen Netzwerk (`deinem lokalen Netz`), der intern auf
   `127.0.0.1:8000` weiterleitet und den `Remote-User`-Header setzt.
+
+### 12.6 Chat-Archive Integration (optional)
+
+- Feature-Flag `CHATAPI_ENABLED` (Default: `false`).
+- Bei aktivierter Integration zeigt die Kontakt-Detailseite
+  (`/contacts/{id}`) Chat-Nachrichten des Kontakts aus einer externen
+  [Chat-Archive API](https://github.com/stefan-koelle/chat-archive).
+- Der API-Container agiert als Proxy: der Browser ruft
+  `GET /api/contacts/{id}/messages` auf, der Server liest den
+  `full_name` des Kontakts aus der DB und leitet die Anfrage an
+  `CHATAPI_URL/conversation?contact_names={full_name}&order=desc` weiter.
+- Der API-Key wird serverseitig aus `CHATAPI_KEY` gelesen, der Browser
+  erhält nie Zugriff auf das Geheimnis.
+- **Namens-Matching**: Das optionale Feld `chat_sender_name` pro Account
+  in `accounts.json` gibt den Namen an, der als eigene Nachricht
+  erkannt wird (z.B. "Stefan Koelle"). Der Vergleich erfolgt
+  umlaut-normalisiert: "Koelle" und "Kölle" werden als identisch
+  erkannt.
+- **Infinite Scroll**: Das Frontend lädt initial 50 Nachrichten
+  (neueste zuerst) und lädt bei Bedarf weitere Batches nach, indem
+  ein Intersection Observer den `offset`-Parameter erhöht.
+- **Darstellung**: Chat-Bubbles im Messenger-Style, eigene Nachrichten
+  rechts (blau), Kontaktnachrichten links (grau). Plattform-Badge
+  (Instagram/Facebook) und Zeitstempel werden angezeigt.
