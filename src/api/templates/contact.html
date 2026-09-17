@@ -367,6 +367,15 @@
             word-break: break-word;
         }
 
+        .chat-msg-bubble a {
+            color: inherit;
+            text-decoration: underline;
+        }
+
+        .chat-msg.own .chat-msg-bubble a {
+            color: #fff;
+        }
+
         .chat-msg.own .chat-msg-bubble {
             background: #0066cc;
             color: #fff;
@@ -678,6 +687,10 @@
 
         const ownNorm = norm(ownName);
 
+        function linkify(text) {
+            return text.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+        }
+
         function renderMsg(m) {
             const isOwn = norm(m.sender_name) === ownNorm;
             const div = document.createElement("div");
@@ -687,7 +700,7 @@
             if (!isOwn && total !== null && total > batchSize) {
                 html += '<div class="chat-msg-sender">' + escHtml(m.sender_name) + '</div>';
             }
-            const text = m.content ? escHtml(m.content) : '<span class="chat-msg-type">[' + m.message_type + ']</span>';
+            const text = m.content ? linkify(escHtml(m.content)) : '<span class="chat-msg-type">[' + m.message_type + ']</span>';
             html += '<div class="chat-msg-bubble">' + text + '</div>';
             if (m.reactions && m.reactions.length > 0) {
                 html += '<div class="chat-reactions">';
