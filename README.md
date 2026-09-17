@@ -328,7 +328,7 @@ In `.env`:
 
 ```
 CHATAPI_ENABLED=true
-CHATAPI_URL=http://docker-host-pve.fritz.box:8420
+CHATAPI_URL=http://chat-archive-host:8420
 CHATAPI_KEY=change-me
 ```
 

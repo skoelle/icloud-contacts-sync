@@ -58,6 +58,9 @@ services:
       MAIL_FROM: "${MAIL_FROM}"
       TIMEZONE: "${TIMEZONE:-Europe/Berlin}"
       WEB_URL: "${WEB_URL:-}"
+      CHATAPI_ENABLED: "${CHATAPI_ENABLED:-false}"
+      CHATAPI_URL: "${CHATAPI_URL:-}"
+      CHATAPI_KEY: "${CHATAPI_KEY:-}"
     volumes:
       - ./config/accounts.json:/app/config/accounts.json:ro
     ports:
