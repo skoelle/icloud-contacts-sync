@@ -229,13 +229,20 @@ def get_contact_messages(
         id_clause = "AND id = %s" if where_clause else "WHERE id = %s"
         with conn.cursor() as cur:
             cur.execute(
-                f"SELECT full_name FROM contacts {where_clause} {id_clause}",
+                f"""SELECT full_name, prefix, given_name, middle_name, family_name, suffix
+                    FROM contacts {where_clause} {id_clause}""",
                 params + [contact_id],
             )
             row = cur.fetchone()
 
-    if not row or not row.get("full_name"):
+    if not row:
         return JSONResponse(status_code=404, content={"detail": "Kontakt nicht gefunden"})
+
+    if not row.get("full_name"):
+        row["full_name"] = db._build_full_name(row)
+
+    if not row.get("full_name"):
+        return JSONResponse(status_code=404, content={"detail": "Kontakt hat keinen Namen"})
 
     try:
         resp = requests.get(

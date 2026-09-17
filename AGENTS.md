@@ -145,6 +145,19 @@ See `.env.example` for full list. Key variables:
 4. Update endpoint table in `SPEC.md` and `README.md`
 5. Test with: `curl -H "Remote-User: <user>" http://127.0.0.1:8000/<path>`
 
+### Querying contact names from the DB
+**IMPORTANT:** The `full_name` column in `contacts` can be NULL — it is
+NOT guaranteed to be set. Always SELECT `prefix, given_name, middle_name,
+family_name, suffix` alongside `full_name` and apply the fallback:
+```python
+if not row.get("full_name"):
+    row["full_name"] = db._build_full_name(row)
+```
+This is what `_row_to_contact_out()` does for API responses. Any code
+that needs a contact's display name (e.g. proxying to external APIs)
+must follow the same pattern. See `get_contact_messages()` in
+`src/api/main.py` for a reference implementation.
+
 ### Adding a new contact field
 1. Add column to `contacts` table in `sql/schema.sql`
 2. Update `src/vcard_parser.py` to extract the field
