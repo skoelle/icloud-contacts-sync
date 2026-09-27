@@ -10,6 +10,7 @@ Benutzernamen im Remote-User-Header mitschickt."""
 import json
 import logging
 import secrets
+import unicodedata
 from datetime import datetime
 from urllib.parse import quote_plus
 
@@ -23,6 +24,7 @@ from starlette.middleware.sessions import SessionMiddleware
 import db
 from api.auth import get_current_user, resolve_account_for_user
 from api.schemas import (
+    ChatTopResponse,
     ContactListResponse,
     ContactOut,
     GroupDetailOut,
@@ -90,6 +92,77 @@ def _account_filter_clause(account_name: str | None) -> tuple[str, list]:
     if account_name is None:
         return "", []
     return "WHERE account = %s", [account_name]
+
+
+CHAT_PLATFORMS = ["instagram", "facebook", "xing", "linkedin"]
+
+
+def _norm_name(name: str | None) -> str:
+    if not name:
+        return ""
+    s = name.strip().lower()
+    for src, dst in (("ä", "ae"), ("ö", "oe"), ("ü", "ue"), ("ß", "ss")):
+        s = s.replace(src, dst)
+    s = unicodedata.normalize("NFKD", s)
+    s = "".join(c for c in s if not unicodedata.combining(c))
+    return " ".join(s.split())
+
+
+def _load_contacts_by_norm_name(conn, account_name: str | None) -> dict[str, list[dict]]:
+    where_clause, params = _account_filter_clause(account_name)
+    with conn.cursor() as cur:
+        cur.execute(
+            f"""SELECT id, full_name, prefix, given_name, middle_name, family_name, suffix, photo_url
+                FROM contacts {where_clause}""",
+            params,
+        )
+        rows = cur.fetchall()
+    mapping: dict[str, list[dict]] = {}
+    for row in rows:
+        if not row.get("full_name"):
+            row["full_name"] = db._build_full_name(row)
+        key = _norm_name(row.get("full_name"))
+        if key:
+            mapping.setdefault(key, []).append(row)
+    return mapping
+
+
+def _fetch_chat_top(platform: str | None, limit: int) -> list[dict]:
+    resp = requests.get(
+        f"{Config.CHATAPI_URL.rstrip('/')}/contacts/top",
+        params={"platform": platform or None, "limit": limit},
+        headers={"X-API-Key": Config.CHATAPI_KEY},
+        timeout=10,
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    return data if isinstance(data, list) else []
+
+
+def _match_chat_top(conn, account_name: str | None, platform: str | None, limit: int) -> list[dict]:
+    mapping = _load_contacts_by_norm_name(conn, account_name)
+    results = []
+    for item in _fetch_chat_top(platform, limit):
+        name = item.get("name") or ""
+        matches = mapping.get(_norm_name(name), [])
+        entry = {
+            "name": name,
+            "message_count": item.get("message_count", 0),
+            "contact_id": None,
+            "full_name": None,
+            "photo_url": None,
+            "matched": False,
+            "search_url": f"/search?search={quote_plus(name)}" if name else None,
+        }
+        if len(matches) == 1:
+            contact = matches[0]
+            entry["contact_id"] = contact["id"]
+            entry["full_name"] = contact["full_name"]
+            entry["photo_url"] = contact.get("photo_url")
+            entry["matched"] = True
+            entry["search_url"] = None
+        results.append(entry)
+    return results
 
 
 def _resolve_effective_account(request: Request, current_user: str) -> tuple[str | None, bool, bool]:
@@ -262,6 +335,30 @@ def get_contact_messages(
         return JSONResponse(status_code=502, content={"detail": "Chat-Archive nicht erreichbar"})
 
     return resp.json()
+
+
+@app.get("/api/chat/top", response_model=ChatTopResponse)
+def api_chat_top(
+    platform: str | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=1000),
+    current_user: str = Depends(get_current_user),
+):
+    if not Config.CHATAPI_ENABLED:
+        return JSONResponse(status_code=404, content={"detail": "Chat-Archive nicht aktiviert"})
+
+    platform = platform or None
+    if platform and platform not in CHAT_PLATFORMS:
+        return JSONResponse(status_code=400, content={"detail": "Unbekannte Plattform"})
+
+    account_name = resolve_account_for_user(current_user)[0]
+    try:
+        with db.get_connection() as conn:
+            items = _match_chat_top(conn, account_name, platform, limit)
+    except requests.RequestException as e:
+        logger.warning("Chat-Archive API Fehler: %s", e)
+        return JSONResponse(status_code=502, content={"detail": "Chat-Archive nicht erreichbar"})
+
+    return {"platform": platform, "total": len(items), "items": items}
 
 
 @app.get("/api/sync-runs", response_model=list[SyncRunOut])
@@ -449,6 +546,7 @@ def web_dashboard(
             "last_sync": last_sync,
             "last_sync_with_changes": last_sync_with_changes,
             "groups": groups,
+            "chat_enabled": Config.CHATAPI_ENABLED,
             "current_year": datetime.now(Config.TIMEZONE).date().year,
             "today": datetime.now(Config.TIMEZONE).date(),
         },
@@ -621,6 +719,7 @@ def web_search_special(
             "contacts": rows,
             "search": "",
             "groups": groups,
+            "chat_enabled": Config.CHATAPI_ENABLED,
             "search_title": title_map.get(type, "Suche"),
         },
     )
@@ -681,7 +780,53 @@ def web_search(
             "contacts": rows,
             "search": search or "",
             "groups": groups,
+            "chat_enabled": Config.CHATAPI_ENABLED,
             "search_title": search_title,
+        },
+    )
+
+
+@app.get("/chat/top", response_class=HTMLResponse)
+def web_chat_top(
+    request: Request,
+    platform: str | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=1000),
+    current_user: str = Depends(get_current_user),
+):
+    if not Config.CHATAPI_ENABLED:
+        return RedirectResponse(url="/", status_code=303)
+
+    account_name, is_admin, show_all = _resolve_effective_account(request, current_user)
+
+    platform = platform or None
+    if platform and platform not in CHAT_PLATFORMS:
+        platform = None
+
+    results = []
+    error = None
+    try:
+        with db.get_connection() as conn:
+            results = _match_chat_top(conn, account_name, platform, limit)
+            groups = db.get_all_groups(conn, account_name)
+    except requests.RequestException as e:
+        logger.warning("Chat-Archive API Fehler: %s", e)
+        error = "Chat-Archive nicht erreichbar"
+        groups = []
+
+    return templates.TemplateResponse(
+        request,
+        "chat_top.html",
+        {
+            "current_user": current_user,
+            "is_admin": is_admin,
+            "show_all": show_all,
+            "account_name": account_name or "alle Accounts",
+            "groups": groups,
+            "chat_enabled": Config.CHATAPI_ENABLED,
+            "platforms": CHAT_PLATFORMS,
+            "selected_platform": platform or "",
+            "results": results,
+            "error": error,
         },
     )
 

@@ -94,4 +94,10 @@
         <a href="/search/special?type=no_social" class="special-search-link">ohne Social</a>
         <a href="/search/special?type=last_updated" class="special-search-link">last updated</a>
     </div>
+    {% if chat_enabled %}
+    <div class="sidebar-section-title">Chat-Archiv</div>
+    <div class="group-cloud">
+        <a href="/chat/top" class="special-search-link">Top Chat-Kontakte</a>
+    </div>
+    {% endif %}
 </div>

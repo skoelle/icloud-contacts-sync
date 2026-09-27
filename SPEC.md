@@ -272,6 +272,7 @@ geteilt wird. Getrennt ist nur die **Rolle**, in der der Container läuft.
 | `GET /` | Dashboard mit Kontaktdaten-Übersicht, letzten Sync-Status und Geburtstagen der nächsten 7 Tage (HTML) |
 | `GET /search` | HTML-Übersicht mit Suchfunktion, zeigt Kontakte des zugeordneten Accounts |
 | `GET /contacts/{id}` | HTML-Detailseite eines einzelnen Kontakts (Jinja2-Template) |
+| `GET /chat/top` | HTML-Liste der nachrichtenreichsten Chat-Kontakte (optional, `?platform=&limit=`) |
 | `GET /api/health` | Health-Check ohne Auth-Anforderung |
 | `GET /api/contacts` | Kontaktliste, Filter `q` (Freitext), Pagination `limit`/`offset` |
 | `GET /api/contacts/{id}` | Einzelner Kontakt (JSON), inklusive `groups`-Feld mit zugehörigen Gruppennamen |
@@ -283,6 +284,7 @@ geteilt wird. Getrennt ist nur die **Rolle**, in der der Container läuft.
 | `GET /api/groups/{id}/members` | Nur Members einer Gruppe (Kontaktdaten aufgelöst) |
 | `GET /api/sync-runs` | Sync-Historie (kontospezifisch bzw. global für Admins) |
 | `GET /api/contacts/{id}/messages` | Chat-Nachrichten via Chat-Archive API (optional, `?offset=0&limit=50`) |
+| `GET /api/chat/top` | Top-Chat-Kontakte via Chat-Archive API, gematcht auf eigene Kontakte (optional, `?platform=&limit=`) |
 
 ### 12.5 Netzwerkkontext
 
@@ -315,3 +317,11 @@ geteilt wird. Getrennt ist nur die **Rolle**, in der der Container läuft.
 - **Darstellung**: Chat-Bubbles im Messenger-Style, eigene Nachrichten
   rechts (blau), Kontaktnachrichten links (grau). Plattform-Badge
   (Instagram/Facebook) und Zeitstempel werden angezeigt.
+- **Top-Kontakte**: Die Seite `/chat/top` (verlinkt in der Sidebar unter
+  „Chat-Archiv", nur bei aktivem Feature-Flag) listet die nachrichten-
+  reichsten Chat-Partner über `CHATAPI_URL/contacts/top`. Der
+  `platform`-Filter (instagram/facebook/xing/linkedin) ist als Dropdown
+  wählbar. Die Namen werden umlaut-normalisiert gegen die eigenen
+  Kontakte gematcht: eindeutige Treffer verlinken auf die Detailseite,
+  nicht zuordenbare Namen auf die Suche. `GET /api/chat/top` liefert
+  dieselben Daten als JSON.

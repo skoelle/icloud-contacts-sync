@@ -285,6 +285,7 @@ Zugriff ohne den Reverse-Proxy ist damit nicht möglich.
 | `GET` | `/` | Dashboard mit Kontaktdaten-Übersicht, letzten Sync-Status und Geburtstagen der nächsten 7 Tage (HTML) |
 | `GET` | `/search` | Web-UI -- Suchfunktion, zeigt Kontakte des eingeloggten Users |
 | `GET` | `/contacts/{id}` | Web-UI -- Detailseite eines einzelnen Kontakts (inkl. Gruppen) |
+| `GET` | `/chat/top` | Web-UI -- Top Chat-Kontakte nach Nachrichtenanzahl, verlinkt mit eigenen Kontakten (optional, `?platform=&limit=`) |
 | `GET` | `/api/health` | Health Check (`{"status": "ok"}`), kein Login nötig |
 | `GET` | `/api/contacts` | Kontaktsuche mit Pagination (`?q=...&limit=...&offset=...`) |
 | `GET` | `/api/contacts/{id}` | Einzelnen Kontakt per ID abrufen (inkl. `groups`-Feld) |
@@ -301,6 +302,7 @@ Zugriff ohne den Reverse-Proxy ist damit nicht möglich.
 | Methode | Pfad | Beschreibung |
 |---------|------|--------------|
 | `GET` | `/api/contacts/{id}/messages` | Chat-Nachrichten eines Kontakts via Chat-Archive API (`?offset=0&limit=50`) |
+| `GET` | `/api/chat/top` | Top-Chat-Kontakte via Chat-Archive API, gematcht auf eigene Kontakte (`?platform=&limit=`) |
 
 Alle Endpunkte (außer `/api/health`) erfordern eine Authentifizierung
 über den `Remote-User`-Header. Nicht-Admins sehen nur die Daten ihres
@@ -345,6 +347,16 @@ In `config/accounts.json` pro Account das `chat_sender_name` setzen
 
 Der Name wird umlaut-normalisiert verglichen: "Koelle" und "Kölle"
 werden als identisch erkannt.
+
+### Top Chat-Kontakte
+
+Die Sidebar verlinkt (bei aktiver Integration) auf `/chat/top`: eine nach
+Nachrichtenanzahl sortierte Liste der häufigsten Chat-Partner. Der
+`platform`-Filter (instagram/facebook/xing/linkedin) lässt sich per
+Dropdown einschränken. Die Namen werden umlaut-normalisiert gegen die
+eigenen Kontakte gematcht; eindeutige Treffer verlinken direkt auf die
+Kontakt-Detailseite, nicht zuordenbare Namen auf die Suche. Dieselben
+Daten liefert `GET /api/chat/top` als JSON.
 
 ## 📄 License
 

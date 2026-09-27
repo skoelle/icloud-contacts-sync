@@ -76,3 +76,19 @@ class GroupDetailOut(GroupOut):
 class GroupListResponse(BaseModel):
     total: int
     items: list[GroupOut]
+
+
+class ChatTopContact(BaseModel):
+    name: str
+    message_count: int
+    contact_id: int | None = None
+    full_name: str | None = None
+    photo_url: str | None = None
+    matched: bool = False
+    search_url: str | None = None
+
+
+class ChatTopResponse(BaseModel):
+    platform: str | None
+    total: int
+    items: list[ChatTopContact]
