@@ -85,6 +85,7 @@ class ChatTopContact(BaseModel):
     full_name: str | None = None
     photo_url: str | None = None
     matched: bool = False
+    chat_url: str | None = None
     search_url: str | None = None
 
 

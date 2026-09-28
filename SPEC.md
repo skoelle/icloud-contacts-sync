@@ -273,6 +273,7 @@ geteilt wird. Getrennt ist nur die **Rolle**, in der der Container läuft.
 | `GET /search` | HTML-Übersicht mit Suchfunktion, zeigt Kontakte des zugeordneten Accounts |
 | `GET /contacts/{id}` | HTML-Detailseite eines einzelnen Kontakts (Jinja2-Template) |
 | `GET /chat/top` | HTML-Liste der nachrichtenreichsten Chat-Kontakte (optional, `?platform=&limit=`) |
+| `GET /chat/person` | HTML-Chat-Verlauf eines nicht zugeordneten Chat-Partners (optional, `?name=...`) |
 | `GET /api/health` | Health-Check ohne Auth-Anforderung |
 | `GET /api/contacts` | Kontaktliste, Filter `q` (Freitext), Pagination `limit`/`offset` |
 | `GET /api/contacts/{id}` | Einzelner Kontakt (JSON), inklusive `groups`-Feld mit zugehörigen Gruppennamen |
@@ -284,6 +285,7 @@ geteilt wird. Getrennt ist nur die **Rolle**, in der der Container läuft.
 | `GET /api/groups/{id}/members` | Nur Members einer Gruppe (Kontaktdaten aufgelöst) |
 | `GET /api/sync-runs` | Sync-Historie (kontospezifisch bzw. global für Admins) |
 | `GET /api/contacts/{id}/messages` | Chat-Nachrichten via Chat-Archive API (optional, `?offset=0&limit=50`) |
+| `GET /api/chat/messages` | Chat-Nachrichten per Chat-Name via Chat-Archive API (optional, `?name=...&offset=0&limit=50`) |
 | `GET /api/chat/top` | Top-Chat-Kontakte via Chat-Archive API, gematcht auf eigene Kontakte (optional, `?platform=&limit=`) |
 
 ### 12.5 Netzwerkkontext
@@ -323,5 +325,23 @@ geteilt wird. Getrennt ist nur die **Rolle**, in der der Container läuft.
   `platform`-Filter (instagram/facebook/xing/linkedin) ist als Dropdown
   wählbar. Die Namen werden umlaut-normalisiert gegen die eigenen
   Kontakte gematcht: eindeutige Treffer verlinken auf die Detailseite,
-  nicht zuordenbare Namen auf die Suche. `GET /api/chat/top` liefert
-  dieselben Daten als JSON.
+  mehrdeutige Treffer (Name mehrfach vorhanden) auf die Suche, Namen
+  ohne Kontakt-Treffer primär auf `/chat/person?name=...` (Sekundär-
+  Link „in Kontakten suchen" bleibt erhalten).
+  `GET /api/chat/top` liefert dieselben Daten als JSON und setzt
+  zusätzlich das Feld `chat_url`.
+- **Chat-Seite für unbekannte Partner**: `/chat/person?name=...` zeigt
+  den Verlauf eines nicht zugeordneten Chat-Partners, ohne dass dieser
+  als Kontakt existieren muss. Der Browser ruft
+  `GET /api/chat/messages?name=...` auf, der Server proxyt an
+  `CHATAPI_URL/conversation?contact_names={name}&order=desc`
+  (404 bei deaktiviertem Flag, 400 bei leerem Namen, 502 bei
+  nicht erreichbarem Chat-Archive). Als eigene Nachrichten gelten die
+  `chat_sender_name`-Werte des zugeordneten Accounts bzw. aller
+  Accounts bei Admins mit „alle Accounts".
+- **Gemeinsame Partials**: CSS, Markup und JavaScript des Chat-Logs
+  liegen in `_chat_css.html`, `_chat_log.html` und `_chat_js.html` und
+  werden sowohl von `contact.html` als auch von `chat_person.html`
+  eingebunden. Das Partial erwartet `chat_messages_url` (Endpunkt mit
+  optionalen Query-Parametern) und `chat_own_names` (Liste eigener
+  Absender-Namen).

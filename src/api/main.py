@@ -139,6 +139,22 @@ def _fetch_chat_top(platform: str | None, limit: int) -> list[dict]:
     return data if isinstance(data, list) else []
 
 
+def _fetch_conversation(names: list[str], offset: int, limit: int) -> dict:
+    resp = requests.get(
+        f"{Config.CHATAPI_URL.rstrip('/')}/conversation",
+        params={
+            "contact_names": names,
+            "order": "desc",
+            "offset": offset,
+            "limit": limit,
+        },
+        headers={"X-API-Key": Config.CHATAPI_KEY},
+        timeout=10,
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+
 def _match_chat_top(conn, account_name: str | None, platform: str | None, limit: int) -> list[dict]:
     mapping = _load_contacts_by_norm_name(conn, account_name)
     results = []
@@ -152,14 +168,18 @@ def _match_chat_top(conn, account_name: str | None, platform: str | None, limit:
             "full_name": None,
             "photo_url": None,
             "matched": False,
+            "chat_url": None,
             "search_url": f"/search?search={quote_plus(name)}" if name else None,
         }
-        if len(matches) == 1:
+        if not matches and name:
+            entry["chat_url"] = f"/chat/person?name={quote_plus(name)}"
+        elif len(matches) == 1:
             contact = matches[0]
             entry["contact_id"] = contact["id"]
             entry["full_name"] = contact["full_name"]
             entry["photo_url"] = contact.get("photo_url")
             entry["matched"] = True
+            entry["chat_url"] = None
             entry["search_url"] = None
         results.append(entry)
     return results
@@ -318,23 +338,31 @@ def get_contact_messages(
         return JSONResponse(status_code=404, content={"detail": "Kontakt hat keinen Namen"})
 
     try:
-        resp = requests.get(
-            f"{Config.CHATAPI_URL.rstrip('/')}/conversation",
-            params={
-                "contact_names": [row["full_name"]],
-                "order": "desc",
-                "offset": offset,
-                "limit": limit,
-            },
-            headers={"X-API-Key": Config.CHATAPI_KEY},
-            timeout=10,
-        )
-        resp.raise_for_status()
+        return _fetch_conversation([row["full_name"]], offset, limit)
     except requests.RequestException as e:
         logger.warning("Chat-Archive API Fehler: %s", e)
         return JSONResponse(status_code=502, content={"detail": "Chat-Archive nicht erreichbar"})
 
-    return resp.json()
+
+@app.get("/api/chat/messages")
+def api_chat_messages(
+    name: str = Query(...),
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=200),
+    current_user: str = Depends(get_current_user),
+):
+    if not Config.CHATAPI_ENABLED:
+        return JSONResponse(status_code=404, content={"detail": "Chat-Archive nicht aktiviert"})
+
+    name = name.strip()
+    if not name:
+        return JSONResponse(status_code=400, content={"detail": "Name fehlt"})
+
+    try:
+        return _fetch_conversation([name], offset, limit)
+    except requests.RequestException as e:
+        logger.warning("Chat-Archive API Fehler: %s", e)
+        return JSONResponse(status_code=502, content={"detail": "Chat-Archive nicht erreichbar"})
 
 
 @app.get("/api/chat/top", response_model=ChatTopResponse)
@@ -831,6 +859,48 @@ def web_chat_top(
     )
 
 
+@app.get("/chat/person", response_class=HTMLResponse)
+def web_chat_person(
+    request: Request,
+    name: str = Query(...),
+    current_user: str = Depends(get_current_user),
+):
+    if not Config.CHATAPI_ENABLED:
+        return RedirectResponse(url="/", status_code=303)
+
+    name = name.strip()
+    if not name:
+        return RedirectResponse(url="/chat/top", status_code=303)
+
+    account_name, is_admin, show_all = _resolve_effective_account(request, current_user)
+
+    with db.get_connection() as conn:
+        groups = db.get_all_groups(conn, account_name)
+
+    accounts = Config.load_accounts()
+    own_names = [
+        a.chat_sender_name for a in accounts
+        if a.chat_sender_name and (account_name is None or a.name == account_name)
+    ]
+
+    return templates.TemplateResponse(
+        request,
+        "chat_person.html",
+        {
+            "current_user": current_user,
+            "is_admin": is_admin,
+            "show_all": show_all,
+            "account_name": account_name or "alle Accounts",
+            "groups": groups,
+            "chat_enabled": Config.CHATAPI_ENABLED,
+            "chat_name": name,
+            "chat_messages_url": "/api/chat/messages?name=" + quote_plus(name),
+            "chat_own_names": own_names,
+            "search_url": "/search?search=" + quote_plus(name),
+        },
+    )
+
+
 @app.get("/contacts/{contact_id}", response_class=HTMLResponse)
 def web_contact(
     request: Request,
@@ -909,7 +979,7 @@ def web_contact(
             "search": search or "",
             "custom_links": resolved_links,
             "chat_enabled": Config.CHATAPI_ENABLED,
-            "chat_sender_name": chat_sender_name,
-            "contact_id": contact_id,
+            "chat_own_names": [chat_sender_name] if chat_sender_name else [],
+            "chat_messages_url": f"/api/contacts/{contact_id}/messages",
         },
     )

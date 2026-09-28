@@ -93,7 +93,24 @@
         .results {
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
+            gap: 0.75rem;
+        }
+
+        .result-row {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .result-sub-link {
+            align-self: flex-end;
+            font-size: 0.8rem;
+            color: #0066cc;
+            text-decoration: none;
+        }
+
+        .result-sub-link:hover {
+            text-decoration: underline;
         }
 
         .result-item {
@@ -213,10 +230,11 @@
         {% elif results %}
         <div class="results">
             {% for r in results %}
+            <div class="result-row">
             {% if r.matched %}
             <a href="/contacts/{{ r.contact_id }}" class="result-item">
             {% else %}
-            <a href="{{ r.search_url or '/search?search=' ~ (r.name|urlquote) }}" class="result-item unmatched">
+            <a href="{{ r.chat_url or r.search_url or ('/search?search=' ~ (r.name|urlquote)) }}" class="result-item unmatched">
             {% endif %}
                 <span class="rank">{{ loop.index }}</span>
                 {% if r.photo_url %}
@@ -227,13 +245,17 @@
                 <div class="result-main">
                     <div class="result-name">{{ r.full_name or r.name }}</div>
                     {% if not r.matched %}
-                    <div class="result-sub">nicht zugeordnet &middot; in Kontakten suchen</div>
+                    <div class="result-sub">{% if r.chat_url %}nicht zugeordnet &middot; Chat-Verlauf ansehen{% else %}mehrdeutig &middot; in Kontakten suchen{% endif %}</div>
                     {% elif r.full_name and r.full_name|lower != r.name|lower %}
                     <div class="result-sub">{{ r.name }}</div>
                     {% endif %}
                 </div>
                 <span class="result-count">{{ r.message_count }}</span>
             </a>
+            {% if r.chat_url and r.search_url %}
+            <a href="{{ r.search_url }}" class="result-sub-link">in Kontakten suchen</a>
+            {% endif %}
+            </div>
             {% endfor %}
         </div>
         {% else %}

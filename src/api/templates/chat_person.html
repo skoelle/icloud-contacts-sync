@@ -1,0 +1,130 @@
+<!-- Copyright (c) 2026 Stefan Koelle (https://stefankoelle.de) -->
+<!-- Licensed under the MIT License. See LICENSE file in project root for details. -->
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <title>{{ chat_name }} – Chat-Verlauf – {{ account_name }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+            overflow-y: scroll;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            color: #222;
+        }
+
+        .meta {
+            color: #666;
+            font-size: 0.875rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 1rem;
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 0.875rem;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .person-card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        .person-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #222;
+            word-break: break-word;
+        }
+
+        .person-sub {
+            font-size: 0.8rem;
+            color: #888;
+            margin-bottom: 0.5rem;
+        }
+
+        .person-search-link {
+            display: inline-block;
+            padding: 0.25rem 0.6rem;
+            background: #e7f3ff;
+            color: #0066cc;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            text-decoration: none;
+            transition: background 0.15s ease;
+        }
+
+        .person-search-link:hover {
+            background: #d0e8ff;
+            text-decoration: underline;
+        }
+
+        .section-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #888;
+            margin-bottom: 0.75rem;
+        }
+
+        {% include "_chat_css.html" %}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><a href="/" style="text-decoration:none;color:inherit;display:inline-flex;align-items:center;gap:0.4rem"><img src="/static/favicon.svg" alt="" style="height:1.5em;width:1.5em;vertical-align:middle">Kontakte</a></h1>
+        <div class="meta">
+            Angemeldet als <strong>{{ current_user }}</strong>
+            {% if is_admin %}(<a href="/admin" style="color:inherit">Admin</a>{% if show_all %}, sieht alle Accounts{% endif %}){% else %}(Account: {{ account_name }}){% endif %}
+        </div>
+
+        <a href="/chat/top" class="back-link">&larr; Zurück zu den Top Chat-Kontakten</a>
+
+        <div class="person-card">
+            <div class="person-name">{{ chat_name }}</div>
+            <div class="person-sub">Nicht in Kontakten zugeordnet</div>
+            <a href="{{ search_url }}" class="person-search-link">In Kontakten suchen</a>
+        </div>
+
+        {% if chat_enabled %}
+        {% include "_chat_log.html" %}
+        {% endif %}
+
+        {% include "_sidebar.html" %}
+    </div>
+
+    {% if chat_enabled %}
+    {% include "_chat_js.html" %}
+    {% endif %}
+</body>
+</html>

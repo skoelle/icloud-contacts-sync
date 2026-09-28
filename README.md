@@ -286,6 +286,7 @@ Zugriff ohne den Reverse-Proxy ist damit nicht möglich.
 | `GET` | `/search` | Web-UI -- Suchfunktion, zeigt Kontakte des eingeloggten Users |
 | `GET` | `/contacts/{id}` | Web-UI -- Detailseite eines einzelnen Kontakts (inkl. Gruppen) |
 | `GET` | `/chat/top` | Web-UI -- Top Chat-Kontakte nach Nachrichtenanzahl, verlinkt mit eigenen Kontakten (optional, `?platform=&limit=`) |
+| `GET` | `/chat/person` | Web-UI -- Chat-Verlauf eines nicht zugeordneten Chat-Partners (`?name=...`) |
 | `GET` | `/api/health` | Health Check (`{"status": "ok"}`), kein Login nötig |
 | `GET` | `/api/contacts` | Kontaktsuche mit Pagination (`?q=...&limit=...&offset=...`) |
 | `GET` | `/api/contacts/{id}` | Einzelnen Kontakt per ID abrufen (inkl. `groups`-Feld) |
@@ -302,6 +303,7 @@ Zugriff ohne den Reverse-Proxy ist damit nicht möglich.
 | Methode | Pfad | Beschreibung |
 |---------|------|--------------|
 | `GET` | `/api/contacts/{id}/messages` | Chat-Nachrichten eines Kontakts via Chat-Archive API (`?offset=0&limit=50`) |
+| `GET` | `/api/chat/messages` | Chat-Nachrichten eines Chat-Namens via Chat-Archive API (`?name=...&offset=0&limit=50`) |
 | `GET` | `/api/chat/top` | Top-Chat-Kontakte via Chat-Archive API, gematcht auf eigene Kontakte (`?platform=&limit=`) |
 
 Alle Endpunkte (außer `/api/health`) erfordern eine Authentifizierung
@@ -354,9 +356,23 @@ Die Sidebar verlinkt (bei aktiver Integration) auf `/chat/top`: eine nach
 Nachrichtenanzahl sortierte Liste der häufigsten Chat-Partner. Der
 `platform`-Filter (instagram/facebook/xing/linkedin) lässt sich per
 Dropdown einschränken. Die Namen werden umlaut-normalisiert gegen die
-eigenen Kontakte gematcht; eindeutige Treffer verlinken direkt auf die
-Kontakt-Detailseite, nicht zuordenbare Namen auf die Suche. Dieselben
-Daten liefert `GET /api/chat/top` als JSON.
+eigenen Kontakte gematcht: eindeutige Treffer verlinken direkt auf die
+Kontakt-Detailseite, mehrdeutige Treffer (Name mehrfach vorhanden) auf
+die Suche. Namen ohne jeden Kontakt-Treffer verlinken auf die
+Chat-Verlaufsseite, als Sekundär-Link bleibt „in Kontakten suchen"
+erreichbar. Dieselben Daten liefert `GET /api/chat/top` als JSON.
+
+### Chat-Verlauf ohne Kontakt
+
+`/chat/person?name=...` zeigt den kompletten Chat-Verlauf eines
+Chat-Partners, der keinem Kontakt zugeordnet ist -- auch ohne
+Kontakt in der Datenbank. Die Seite nutzt dieselben Bubbles und
+Infinite-Scroll-Mechanik wie die Kontakt-Detailseite (gemeinsame
+Partials `_chat_css.html` / `_chat_log.html` / `_chat_js.html`) und
+ruft `GET /api/chat/messages?name=...` auf, das serverseitig an
+`CHATAPI_URL/conversation?contact_names={name}` proxyt. Die Blau/Grau-
+Aufteilung erfolgt über die `chat_sender_name`-Liste des zugeordneten
+Accounts (Admins mit „alle Accounts" sehen alle Absender-Namen).
 
 ## 📄 License
 
