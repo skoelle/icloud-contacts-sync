@@ -285,7 +285,9 @@ geteilt wird. Getrennt ist nur die **Rolle**, in der der Container läuft.
 | `GET /api/groups/{id}/members` | Nur Members einer Gruppe (Kontaktdaten aufgelöst) |
 | `GET /api/sync-runs` | Sync-Historie (kontospezifisch bzw. global für Admins) |
 | `GET /api/contacts/{id}/messages` | Chat-Nachrichten via Chat-Archive API (optional, `?offset=0&limit=50`) |
+| `GET /api/contacts/{id}/messages/export` | Chat-Archiv eines Kontakts als Markdown-Download (optional, inkl. Stammdaten + Notizen) |
 | `GET /api/chat/messages` | Chat-Nachrichten per Chat-Name via Chat-Archive API (optional, `?name=...&offset=0&limit=50`) |
+| `GET /api/chat/export` | Chat-Archiv per Chat-Name als Markdown-Download (optional, `?name=...`, Stammdaten bei eindeutigem Kontakt-Match) |
 | `GET /api/chat/top` | Top-Chat-Kontakte via Chat-Archive API, gematcht auf eigene Kontakte (optional, `?platform=&limit=`) |
 
 ### 12.5 Netzwerkkontext
@@ -344,4 +346,25 @@ geteilt wird. Getrennt ist nur die **Rolle**, in der der Container läuft.
   werden sowohl von `contact.html` als auch von `chat_person.html`
   eingebunden. Das Partial erwartet `chat_messages_url` (Endpunkt mit
   optionalen Query-Parametern) und `chat_own_names` (Liste eigener
-  Absender-Namen).
+  Absender-Namen). Optional rendert `_chat_log.html` zusätzlich einen
+  Download-Button, wenn `chat_export_url` gesetzt ist.
+- **Markdown-Export**: Am Chat-Log (Kontakt-Detailseite und
+  `/chat/person`) bietet ein Button „Als Markdown laden" den Download
+  des kompletten Chat-Archivs als `text/markdown`
+  (`Content-Disposition: attachment`, Dateiname
+  `chat-{name}-{YYYY-MM-DD}.md`). Endpunkte:
+  `GET /api/contacts/{id}/messages/export` und
+  `GET /api/chat/export?name=...`. Beide paginieren
+  `CHATAPI_URL/conversation` mit `order=asc` (chronologisch, älteste
+  zuerst; max. 50.000 Nachrichten mit Truncation-Hinweis) und bauen das
+  Dokument aus: Abschnitt „Stammdaten" (alle Kontaktfelder inkl.
+  Adressen, sozialer Profile, Beziehungen, Kategorien, Gruppen),
+  Abschnitt „Notizen" (vCard `NOTE`), „Chat-Übersicht" (Anzahl,
+  Zeitraum, letzter Kontakt, Plattformen, Aufteilung Ich/Kontakt) und
+  „Chat-Verlauf" (nach Tagen gruppiert, eigene Nachrichten mit „Ich"
+  markiert, Nicht-Text-Nachrichten als Typ-Kennzeichnung, Reaktionen
+  angehängt). `/api/chat/export` löst den Namen zusätzlich umlaut-
+  normalisiert gegen die Kontakte des Accounts auf und exportiert die
+  Stammdaten, wenn genau ein Kontakt trifft. Gleiche Fehlersemantik wie
+  die Lese-Endpunkte (404 ohne Flag/bekannten Kontakt, 400 bei leerem
+  Namen, 502 bei nicht erreichbarem Chat-Archive).
