@@ -9,14 +9,15 @@ vorgeschalteten Reverse-Proxy mit Authelia, der den eingeloggten
 Benutzernamen im Remote-User-Header mitschickt."""
 import json
 import logging
+import re
 import secrets
 import unicodedata
-from datetime import datetime
+from datetime import datetime, timezone
 from urllib.parse import quote_plus
 
 import requests
 from fastapi import Depends, FastAPI, Query, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
@@ -139,12 +140,12 @@ def _fetch_chat_top(platform: str | None, limit: int) -> list[dict]:
     return data if isinstance(data, list) else []
 
 
-def _fetch_conversation(names: list[str], offset: int, limit: int) -> dict:
+def _fetch_conversation(names: list[str], offset: int, limit: int, order: str = "desc") -> dict:
     resp = requests.get(
         f"{Config.CHATAPI_URL.rstrip('/')}/conversation",
         params={
             "contact_names": names,
-            "order": "desc",
+            "order": order,
             "offset": offset,
             "limit": limit,
         },
@@ -153,6 +154,196 @@ def _fetch_conversation(names: list[str], offset: int, limit: int) -> dict:
     )
     resp.raise_for_status()
     return resp.json()
+
+
+CHAT_EXPORT_MAX_MESSAGES = 50000
+
+
+def _fetch_all_chat_messages(names: list[str]) -> tuple[list[dict], int, bool]:
+    messages: list[dict] = []
+    total = 0
+    truncated = False
+    offset = 0
+    while True:
+        data = _fetch_conversation(names, offset, 1000, order="asc")
+        total = data.get("total") or 0
+        batch = data.get("messages") or []
+        if not batch:
+            break
+        messages.extend(batch)
+        offset += len(batch)
+        if offset >= total:
+            break
+        if offset >= CHAT_EXPORT_MAX_MESSAGES:
+            truncated = True
+            break
+    if total > CHAT_EXPORT_MAX_MESSAGES:
+        truncated = True
+    return messages, total, truncated
+
+
+def _slugify_name(name: str) -> str:
+    s = re.sub(r"[^a-z0-9]+", "-", _norm_name(name)).strip("-")
+    return (s or "kontakt")[:80]
+
+
+def _md_typed(item: dict, key: str = "type") -> str:
+    t = (item.get(key) or "").strip()
+    return f" ({t})" if t else ""
+
+
+def _fmt_address_md(a: dict) -> str:
+    parts = [
+        a.get("street"),
+        " ".join(p for p in [a.get("zip"), a.get("city")] if p and str(p).strip()),
+        a.get("region"),
+        a.get("country"),
+    ]
+    return ", ".join(p.strip() for p in parts if p and str(p).strip())
+
+
+def _fmt_ms(ms: float | int, fmt: str) -> str:
+    return datetime.fromtimestamp(ms / 1000, tz=timezone.utc).astimezone(Config.TIMEZONE).strftime(fmt)
+
+
+def _build_chat_markdown(
+    title: str,
+    contact: dict | None,
+    messages: list[dict],
+    total: int,
+    truncated: bool,
+    own_names: list[str],
+) -> str:
+    lines: list[str] = [
+        f"# Chat-Archiv: {title}",
+        "",
+        f"Exportiert am {datetime.now(Config.TIMEZONE).strftime('%d.%m.%Y %H:%M')} aus iCloud Contacts Sync.",
+        "",
+    ]
+    if truncated:
+        lines += [f"**Hinweis:** Export auf die {len(messages)} ältesten Nachrichten begrenzt.", ""]
+
+    if contact:
+        lines += ["## Stammdaten", ""]
+        simple_fields = [
+            ("Name", contact.get("full_name")),
+            ("Spitzname", contact.get("nickname")),
+            ("Organisation", contact.get("organization")),
+            ("Abteilung", contact.get("department")),
+            ("Job-Titel", contact.get("job_title")),
+            ("Geburtstag", contact["birthday"].strftime("%d.%m.%Y") if contact.get("birthday") else None),
+            ("Jahrestag", contact["anniversary"].strftime("%d.%m.%Y") if contact.get("anniversary") else None),
+            ("Konto", contact.get("account")),
+        ]
+        for label, value in simple_fields:
+            if value:
+                lines.append(f"- **{label}:** {value}")
+        for label, key in (("E-Mail", "emails"), ("Telefon", "phones"), ("Website", "urls")):
+            for item in contact.get(key) or []:
+                if item.get("value"):
+                    lines.append(f"- **{label}**{_md_typed(item)}: {item['value']}")
+        for a in contact.get("addresses") or []:
+            addr = _fmt_address_md(a)
+            if addr:
+                lines.append(f"- **Adresse**{_md_typed(a)}: {addr}")
+        for sp in contact.get("social_profiles") or []:
+            detail = sp.get("url") or sp.get("username")
+            if detail:
+                lines.append(f"- **Soziales Profil** ({sp.get('type') or 'other'}): {detail}")
+        for r in contact.get("related_names") or []:
+            if r.get("value"):
+                lines.append(f"- **Beziehung** ({r.get('type') or 'Sonstige'}): {r['value']}")
+        if contact.get("categories"):
+            lines.append(f"- **Kategorien:** {', '.join(contact['categories'])}")
+        if contact.get("groups"):
+            lines.append(f"- **Gruppen:** {', '.join(contact['groups'])}")
+        if contact.get("updated_at"):
+            lines.append(f"- **Kontakt zuletzt synchronisiert:** {contact['updated_at']}")
+
+        notes = (contact.get("notes") or "").strip()
+        lines += ["", "## Notizen", ""]
+        lines.append(notes if notes else "Keine Notizen hinterlegt.")
+
+    lines += ["", "## Chat-Übersicht", ""]
+    own_norms = {_norm_name(n) for n in own_names if n}
+    if messages:
+        own_count = sum(1 for m in messages if _norm_name(m.get("sender_name")) in own_norms)
+        first_ts = messages[0].get("timestamp_ms") or 0
+        last_ts = messages[-1].get("timestamp_ms") or 0
+        platforms = sorted({m["platform"] for m in messages if m.get("platform")})
+        lines.append(f"- **Nachrichten gesamt:** {total}")
+        if first_ts:
+            lines.append(
+                f"- **Zeitraum:** {_fmt_ms(first_ts, '%d.%m.%Y %H:%M')} – {_fmt_ms(last_ts, '%d.%m.%Y %H:%M')}"
+            )
+            lines.append(f"- **Letzter Kontakt:** {_fmt_ms(last_ts, '%d.%m.%Y %H:%M')}")
+        if platforms:
+            lines.append(f"- **Plattformen:** {', '.join(platforms)}")
+        lines.append(f"- **Von dir:** {own_count} · **Von {title}:** {len(messages) - own_count}")
+    else:
+        lines.append("Keine Nachrichten vorhanden.")
+
+    if messages:
+        lines += ["", "## Chat-Verlauf", "", "Chronologisch, älteste Nachricht zuerst.", ""]
+    else:
+        lines += ["", "## Chat-Verlauf", "", "Keine Nachrichten vorhanden.", ""]
+    current_day = None
+    for m in messages:
+        ts = m.get("timestamp_ms") or 0
+        day = _fmt_ms(ts, "%Y-%m-%d") if ts else "Unbekanntes Datum"
+        time_str = _fmt_ms(ts, "%H:%M") if ts else "--:--"
+        if day != current_day:
+            current_day = day
+            lines += [f"### {day}", ""]
+        sender = m.get("sender_name") or "Unbekannt"
+        is_own = _norm_name(sender) in own_norms
+        label = "Ich" if is_own else sender
+        platform = m.get("platform")
+        suffix = f" ({platform})" if platform and not is_own else ""
+        lines.append(f"**[{time_str}] {label}**{suffix}:")
+        lines.append("")
+        content = (m.get("content") or "").strip()
+        mtype = m.get("message_type") or ""
+        lines.append(content if content else f"*[{mtype}]*" if mtype else "*(leere Nachricht)*")
+        for r in m.get("reactions") or []:
+            emoji = r.get("reaction") or r.get("emoji") or ""
+            user = r.get("user")
+            lines.append(f"→ Reaktion: {emoji}" + (f" von {user}" if user else ""))
+        lines.append("")
+
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def _markdown_response(title: str, markdown: str) -> Response:
+    filename = f"chat-{_slugify_name(title)}-{datetime.now(Config.TIMEZONE).strftime('%Y-%m-%d')}.md"
+    return Response(
+        content=markdown,
+        media_type="text/markdown; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+def _load_contact_export_row(conn, account_name: str | None, contact_id: int) -> dict | None:
+    where_clause, params = _account_filter_clause(account_name)
+    id_clause = "AND id = %s" if where_clause else "WHERE id = %s"
+    with conn.cursor() as cur:
+        cur.execute(
+            f"""SELECT id, account, uid, full_name, prefix, given_name, middle_name, family_name, suffix,
+                       nickname, organization, job_title, department, birthday, anniversary, notes,
+                       emails, phones, addresses, urls, social_profiles, related_names, categories, updated_at
+                FROM contacts {where_clause} {id_clause}""",
+            params + [contact_id],
+        )
+        return cur.fetchone()
+
+
+def _contact_chat_sender_name(contact: dict | None) -> str:
+    if not contact:
+        return ""
+    for acc in Config.load_accounts():
+        if acc.name == contact.get("account"):
+            return acc.chat_sender_name
+    return ""
 
 
 def _match_chat_top(conn, account_name: str | None, platform: str | None, limit: int) -> list[dict]:
@@ -363,6 +554,95 @@ def api_chat_messages(
     except requests.RequestException as e:
         logger.warning("Chat-Archive API Fehler: %s", e)
         return JSONResponse(status_code=502, content={"detail": "Chat-Archive nicht erreichbar"})
+
+
+@app.get("/api/contacts/{contact_id}/messages/export")
+def export_contact_messages(contact_id: int, current_user: str = Depends(get_current_user)):
+    if not Config.CHATAPI_ENABLED:
+        return JSONResponse(status_code=404, content={"detail": "Chat-Archive nicht aktiviert"})
+
+    account_name = resolve_account_for_user(current_user)[0]
+    with db.get_connection() as conn:
+        row = _load_contact_export_row(conn, account_name, contact_id)
+        group_names = []
+        if row:
+            group_names = [
+                g["name"] for g in db.get_groups_for_contact(conn, row["account"], row["uid"]) if g.get("name")
+            ]
+
+    if not row:
+        return JSONResponse(status_code=404, content={"detail": "Kontakt nicht gefunden"})
+
+    contact = _row_to_contact_out(row, group_names=group_names)
+    full_name = contact.get("full_name")
+    if not full_name:
+        return JSONResponse(status_code=404, content={"detail": "Kontakt hat keinen Namen"})
+
+    chat_sender = _contact_chat_sender_name(contact)
+    try:
+        messages, total, truncated = _fetch_all_chat_messages([full_name])
+    except requests.RequestException as e:
+        logger.warning("Chat-Archive API Fehler: %s", e)
+        return JSONResponse(status_code=502, content={"detail": "Chat-Archive nicht erreichbar"})
+
+    markdown = _build_chat_markdown(
+        title=full_name,
+        contact=contact,
+        messages=messages,
+        total=total,
+        truncated=truncated,
+        own_names=[chat_sender] if chat_sender else [],
+    )
+    return _markdown_response(full_name, markdown)
+
+
+@app.get("/api/chat/export")
+def export_chat_by_name(name: str = Query(...), current_user: str = Depends(get_current_user)):
+    if not Config.CHATAPI_ENABLED:
+        return JSONResponse(status_code=404, content={"detail": "Chat-Archive nicht aktiviert"})
+
+    name = name.strip()
+    if not name:
+        return JSONResponse(status_code=400, content={"detail": "Name fehlt"})
+
+    account_name = resolve_account_for_user(current_user)[0]
+    contact = None
+    with db.get_connection() as conn:
+        matches = _load_contacts_by_norm_name(conn, account_name).get(_norm_name(name), [])
+        if len(matches) == 1:
+            row = _load_contact_export_row(conn, account_name, matches[0]["id"])
+            if row:
+                group_names = [
+                    g["name"]
+                    for g in db.get_groups_for_contact(conn, row["account"], row["uid"])
+                    if g.get("name")
+                ]
+                contact = _row_to_contact_out(row, group_names=group_names)
+
+    own_names = [n for n in [_contact_chat_sender_name(contact)] if n]
+    if not own_names:
+        own_names = [
+            a.chat_sender_name
+            for a in Config.load_accounts()
+            if a.chat_sender_name and (account_name is None or a.name == account_name)
+        ]
+
+    title = (contact.get("full_name") if contact else None) or name
+    try:
+        messages, total, truncated = _fetch_all_chat_messages([name])
+    except requests.RequestException as e:
+        logger.warning("Chat-Archive API Fehler: %s", e)
+        return JSONResponse(status_code=502, content={"detail": "Chat-Archive nicht erreichbar"})
+
+    markdown = _build_chat_markdown(
+        title=title,
+        contact=contact,
+        messages=messages,
+        total=total,
+        truncated=truncated,
+        own_names=own_names,
+    )
+    return _markdown_response(title, markdown)
 
 
 @app.get("/api/chat/top", response_model=ChatTopResponse)
@@ -895,6 +1175,7 @@ def web_chat_person(
             "chat_enabled": Config.CHATAPI_ENABLED,
             "chat_name": name,
             "chat_messages_url": "/api/chat/messages?name=" + quote_plus(name),
+            "chat_export_url": "/api/chat/export?name=" + quote_plus(name),
             "chat_own_names": own_names,
             "search_url": "/search?search=" + quote_plus(name),
         },
@@ -981,5 +1262,6 @@ def web_contact(
             "chat_enabled": Config.CHATAPI_ENABLED,
             "chat_own_names": [chat_sender_name] if chat_sender_name else [],
             "chat_messages_url": f"/api/contacts/{contact_id}/messages",
+            "chat_export_url": f"/api/contacts/{contact_id}/messages/export",
         },
     )

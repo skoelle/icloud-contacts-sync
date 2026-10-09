@@ -303,7 +303,9 @@ Zugriff ohne den Reverse-Proxy ist damit nicht möglich.
 | Methode | Pfad | Beschreibung |
 |---------|------|--------------|
 | `GET` | `/api/contacts/{id}/messages` | Chat-Nachrichten eines Kontakts via Chat-Archive API (`?offset=0&limit=50`) |
+| `GET` | `/api/contacts/{id}/messages/export` | Chat-Archiv eines Kontakts als Markdown-Download (inkl. Stammdaten + Notizen) |
 | `GET` | `/api/chat/messages` | Chat-Nachrichten eines Chat-Namens via Chat-Archive API (`?name=...&offset=0&limit=50`) |
+| `GET` | `/api/chat/export` | Chat-Archiv per Chat-Name als Markdown-Download (`?name=...`) |
 | `GET` | `/api/chat/top` | Top-Chat-Kontakte via Chat-Archive API, gematcht auf eigene Kontakte (`?platform=&limit=`) |
 
 Alle Endpunkte (außer `/api/health`) erfordern eine Authentifizierung
@@ -373,6 +375,38 @@ ruft `GET /api/chat/messages?name=...` auf, das serverseitig an
 `CHATAPI_URL/conversation?contact_names={name}` proxyt. Die Blau/Grau-
 Aufteilung erfolgt über die `chat_sender_name`-Liste des zugeordneten
 Accounts (Admins mit „alle Accounts" sehen alle Absender-Namen).
+
+### Chat-Archiv als Markdown-Export
+
+Am Chat-Log (Kontakt-Detailseite und `/chat/person`) gibt es den Button
+„Als Markdown laden". Er lädt das komplette Chat-Archiv als
+Markdown-Datei (`chat-{name}-{YYYY-MM-DD}.md`), die sich direkt als
+Kontext für KI-Tools eignet -- z.B. für Beziehungsanalysen, das
+Formulieren passender Antworten auf neue Nachrichten oder das Erstellen
+von Initiative-Kontakten.
+
+Die Datei enthält:
+
+- **Stammdaten** -- alle Kontaktfelder: Name, Organisation, Job-Titel,
+  Geburtstag, E-Mails, Telefonnummern, Adressen, Websites, soziale
+  Profile, Beziehungen, Kategorien, Gruppen, Account und letzte
+  Sync-Zeit
+- **Notizen** -- der vollständige Notizen-Text des Kontakts
+- **Chat-Übersicht** -- Nachrichtenanzahl, Zeitraum, letzter Kontakt,
+  Plattformen und Aufteilung „Von dir" / „Von {Kontakt}"
+- **Chat-Verlauf** -- chronologisch (älteste Nachricht zuerst), nach
+  Tagen gruppiert, mit Uhrzeit, Absender, Plattform, Reaktionen und
+  Kennzeichnung nicht-Text-Nachrichten (z.B. `[image]`)
+
+Eigene Nachrichten sind mit „Ich" markiert (Umlaut-normalisiert über
+`chat_sender_name`). Die Endpunkte dazu sind
+`GET /api/contacts/{id}/messages/export` (mit vollen Stammdaten) und
+`GET /api/chat/export?name=...` (auf `/chat/person`; Stammdaten werden
+nur mitexportiert, wenn der Name eindeutig auf einen Kontakt matcht).
+Angefordert wird das Archiv serverseitig komplett paginiert
+(`order=asc`, max. 50.000 Nachrichten) und als `text/markdown` mit
+`Content-Disposition: attachment` ausgeliefert -- der Button funktioniert
+ohne JavaScript.
 
 ## 📄 License
 
