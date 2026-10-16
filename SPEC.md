@@ -181,7 +181,10 @@ gelesen werden (per Volume-Mount, nicht im Image, nicht im Git).
 Unverändert gegenüber v1:
 
 - `build-and-push.yml`: Build und Push nach `ghcr.io` bei Push auf
-  `main`, Tags `latest` und Kurz-SHA.
+  `main`, Tags `latest` und Kurz-SHA. Nach erfolgreichem Push optionaler
+  Webhook-Notify-Step (Repo-Secrets `WEBHOOK_URL`/`WEBHOOK_TOKEN`):
+  `POST` mit Bearer-Token, Step schlägt fehl bei HTTP ≠ 200 oder
+  `summary.updated == 0`; ohne Secrets inaktiv.
 - Nachgelagerter `cleanup`-Job über `dataaxiom/ghcr-cleanup-action`,
   behält die letzten 4 getaggten Images, löscht ungetaggte Artefakte,
   `latest` von der Zählung ausgenommen.

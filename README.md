@@ -180,6 +180,13 @@ Server auf `0.0.0.0:8000`.
 
 - Jeder Push auf `main` baut automatisch ein neues Image und pusht es
   nach `ghcr.io/<owner>/icloud-contacts-sync`.
+- Optional lässt sich nach einem erfolgreichen Push ein eigener
+  Webhook benachrichtigen, der das Image pullt und die Container neu
+  lädt. Dazu die Repository-Secrets `WEBHOOK_URL` und `WEBHOOK_TOKEN`
+  setzen; der Workflow sendet dann einen `POST` mit
+  `Authorization: Bearer <token>` und wartet (bis zu 10 Minuten) auf die
+  Antwort. Der Step schlägt fehl, wenn HTTP-Status ≠ 200 oder
+  `summary.updated == 0`. Ohne die Secrets wird nichts gesendet.
 - Ein separater Cleanup-Job behält jeweils nur die letzten 4 erfolgreich
   gebauten, getaggten Images.
 - Der Lint-Job nutzt `ruff==0.15.22` (gepint) mit der alten Default-Auswahl

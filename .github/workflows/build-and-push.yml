@@ -15,6 +15,9 @@ jobs:
     permissions:
       contents: read
       packages: write
+    env:
+      WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+      WEBHOOK_TOKEN: ${{ secrets.WEBHOOK_TOKEN }}
 
     steps:
       - name: Checkout
@@ -48,6 +51,24 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Notify webhook
+        if: env.WEBHOOK_URL != ''
+        run: |
+          set -euo pipefail
+          http_code=$(curl -sS -o webhook-response.json -w "%{http_code}" \
+            --connect-timeout 15 --max-time 600 \
+            -X POST "$WEBHOOK_URL" \
+            -H "Authorization: Bearer $WEBHOOK_TOKEN")
+          echo "webhook: HTTP $http_code"
+          cat webhook-response.json; echo
+          updated=$(jq -r '.summary.updated // 0' webhook-response.json 2>/dev/null || echo 0)
+          failed=$(jq -r '.summary.failed // 0' webhook-response.json 2>/dev/null || echo 0)
+          echo "updated=$updated failed=$failed"
+          if [ "$http_code" != "200" ] || [ "$updated" -le 0 ]; then
+            echo "::error::webhook did not update the image (HTTP $http_code, updated=$updated, failed=$failed)"
+            exit 1
+          fi
 
   cleanup:
     needs: build-and-push
