@@ -65,14 +65,12 @@ def build_message(account_name: str, birthdays: list[dict], target_date: date | 
     msg["From"] = Config.MAIL_FROM
 
     if not birthdays:
-        msg["Subject"] = f"Geburtstage heute ({today.isoformat()}): keine"
+        msg["Subject"] = f"Geburtstage {today.strftime('%d.%m.%y')}: keine"
         msg.set_content("Heute hat niemand aus deinen Kontakten Geburtstag.")
         return msg
 
-    if len(birthdays) == 1:
-        msg["Subject"] = f"Geburtstage heute ({today.isoformat()}): {birthdays[0]['full_name']}"
-    else:
-        msg["Subject"] = f"Geburtstage heute ({today.isoformat()}): {len(birthdays)}"
+    names = " - ".join(b["full_name"] for b in birthdays)
+    msg["Subject"] = f"Geburtstage {today.strftime('%d.%m.%y')}: {names}"
 
     plain_lines = [f"Heutige Geburtstage ({today.isoformat()}):", ""]
     for b in birthdays:
