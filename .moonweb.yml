@@ -1,6 +1,6 @@
 title: "iCloud Contacts Sync"
 emoji: "🔄"
 category: code
-subcategory: "Smart Home Apps"
+subcategory: "Apps"
 status: active
 stack: [Python, FastAPI, Uvicorn, Jinja2]
