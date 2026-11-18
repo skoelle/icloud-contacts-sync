@@ -75,17 +75,27 @@ cd src && python3 sync.py
 cd src && python3 mailer.py
 ```
 
-### Docker build
+### Docker build (deploy host only)
 
 ```bash
+cp docker-compose.example.yml docker-compose.yml
 docker compose build
 ```
 
-### Docker run
+### Docker run (deploy host only)
 
 ```bash
 docker compose up -d
 ```
+
+Docker/Compose is for deployment only. The repo ships
+`docker-compose.example.yml`; the real `docker-compose.yml` is gitignored and
+exists only on the deploy hosts (`docker-host-pve.fritz.box`,
+`docker-host-nas.fritz.box`). This dev VM cannot reach those hosts — do not try
+to start or manage production containers from here. Develop locally without
+Docker (`python3 sync.py`, `python3 mailer.py`, `./demo.sh`); any local Docker
+test must be ephemeral (`docker run --rm`, no `-d`, no `restart:`) and cleaned
+up with `docker compose down` afterwards.
 
 ### Run demo (no MariaDB needed)
 

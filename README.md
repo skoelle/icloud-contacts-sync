@@ -74,7 +74,15 @@ Empfänger-Adresse wird pro Account in `accounts.json` unter
 docker login ghcr.io -u DEIN_GITHUB_USER
 ```
 
-Passe in `docker-compose.yml` den Image-Namen
+Das Repo enthält nur die Vorlage `docker-compose.example.yml`. Die echte
+`docker-compose.yml` ist gitignored und wird ausschließlich auf dem
+Deploy-Host erzeugt:
+
+```
+cp docker-compose.example.yml docker-compose.yml
+```
+
+Passe darin den Image-Namen
 (`ghcr.io/DEIN_GITHUB_USER/icloud-contacts-sync:latest`) auf deinen
 tatsächlichen GitHub-Namespace an.
 
@@ -236,7 +244,7 @@ Gruppen landen in `groups`, Kontakte bleiben in `contacts`.
 ## 🌐 11. Web-Ansicht und API (interner Zugriff über Authelia)
 
 Läuft als zweiter Service aus demselben Image, aber mit anderem
-Startbefehl, siehe `docker-compose.yml` (`icloud-contacts-api`). Die API
+Startbefehl, siehe `docker-compose.example.yml` (`icloud-contacts-api`). Die API
 selbst hat kein eigenes Login, sie vertraut vollständig dem
 vorgeschalteten Reverse-Proxy mit Authelia.
 

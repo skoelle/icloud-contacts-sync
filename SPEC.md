@@ -193,7 +193,9 @@ Unverändert gegenüber v1:
 
 ## 10. Betrieb auf der Docker-Host
 
-- `docker-compose.yml` mountet `config/accounts.yml` read-only in den
+- Im Repo liegt nur `docker-compose.example.yml`; die echte
+  `docker-compose.yml` ist gitignored und wird nur auf dem Deploy-Host aus
+  der Vorlage erzeugt. Sie mountet `config/accounts.json` read-only in den
   Container und übergibt DB- sowie SMTP-Zugangsdaten per `.env`.
 - Für private GHCR-Packages weiterhin einmaliger `docker login ghcr.io`
   mit PAT (Scope `read:packages`) nötig.
@@ -231,7 +233,7 @@ geteilt wird. Getrennt ist nur die **Rolle**, in der der Container läuft.
 - Das Dockerfile bleibt unverändert eines für alle Zwecke: es enthält
   sowohl `src/sync.py`, `src/mailer.py` als auch das komplette
   `src/api/`-Package.
-- `docker-compose.yml` definiert zwei Services aus demselben Image:
+- `docker-compose.example.yml` definiert zwei Services aus demselben Image:
   - `icloud-contacts-sync`: Standard-Entrypoint, startet den
     Python-Scheduler (`scheduler.py`) mit Sync- und Mailer-Intervallen.
   - `icloud-contacts-api`: überschreibt `command` komplett mit
